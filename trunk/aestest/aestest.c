@@ -88,7 +88,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
 	}
 	
 	for (i = 0; i < blocklen; ++i)
-		fprintf(file,"%c", blk[i]);
+		fprintf(file,"%02x ", blk[i]);
 		
 	fprintf(file, "\n\n");
 	
@@ -99,8 +99,16 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
 int main()
 {
 	FILE *fp = fopen("output.txt", "w");
+	KeyType keytypes[] = {AES128, AES192, AES256};
+	size_t blocksizes[] = {64, 128, 192, 256, 1024, 2048, 65536};
+	unsigned k, b, seed;
 	
-	test(AES128, ENCRYPT, 1050, 256, fp);
+	for (seed = 2; seed < 100; ++seed)
+		for (b = 0; b < 7; ++b)
+			for (k = 0; k < 3; ++k) {
+				test(keytypes[k], ENCRYPT, seed, blocksizes[b], fp);
+				test(keytypes[k], DECRYPT, seed, blocksizes[b], fp);
+			}
 	
 	fclose(fp);
 	
