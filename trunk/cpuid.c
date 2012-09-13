@@ -4,7 +4,7 @@
  * Checks if CPU has support of AES instructions
  *
  * @author kryukov@frtk.ru
- * @version 1.0
+ * @version 2.0
  *
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
@@ -12,21 +12,23 @@
 
 #include <stdio.h>
 
-static int Check_CPU_support_AES()
-{
 #ifdef __GNUC__
-    unsigned int a,b,c,d;
-    __asm__ __volatile__ ("cpuid":"=a" (a), "=b" (b), "=c" (c), "=d" (d) : "a" (1));
-    return (c & 0x2000000);
-#else
+#define __cpuid(CPUINFO, FUNC)\
+__asm__ __volatile__ ("cpuid":\
+"=a" (CPUINFO[0]), "=b" (CPUINFO[1]), "=c" (CPUINFO[2]), "=d" (CPUINFO[3]) : "a" (FUNC));
+#endif
+
+static int CheckCPUsupportAES()
+{
     unsigned int CPUInfo[4];
     __cpuid(CPUInfo, 1);
-    return (CPUInfo[2] & 0x2000000);
-#endif
+    return CPUInfo[2] & (1 << 25);
 }
 
 int main()
 {
-    printf(Check_CPU_support_AES() ? "This CPU supports AES\n" : "This CPU does NOT support AES\n");
+    printf(CheckCPUsupportAES()
+        ? "This CPU supports AES\n"
+        : "This CPU does NOT support AES\n");
     return 0;
 }
