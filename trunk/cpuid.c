@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 
-int Check_CPU_support_AES()
+static int Check_CPU_support_AES()
 {
 #ifdef __GNUC__
     unsigned int a,b,c,d;
@@ -27,6 +27,6 @@ int Check_CPU_support_AES()
 
 int main()
 {
-    printf(Check_CPU_support_AES() ? "This CPU support AES\n" : "This CPU does NOT support AES\n");
+    printf(Check_CPU_support_AES() ? "This CPU supports AES\n" : "This CPU does NOT support AES\n");
     return 0;
 }
