@@ -19,13 +19,13 @@ void *safemalloc(size_t n, size_t size)
 {
     void *p;
     if (n > INT_MAX / size) {
-		p = NULL;
+        p = NULL;
     }
-	else {
-		size *= n;
-		if (size == 0)
-			size = 1;
-		p = malloc(size);
+    else {
+        size *= n;
+        if (size == 0)
+            size = 1;
+        p = malloc(size);
     }
 
     return p;
@@ -34,7 +34,7 @@ void *safemalloc(size_t n, size_t size)
 void safefree(void *ptr)
 {
     if (ptr)
-		free(ptr);
+        free(ptr);
 }
 
 void smemclr(void *b, size_t n) {
