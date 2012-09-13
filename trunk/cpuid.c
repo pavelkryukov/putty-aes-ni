@@ -14,9 +14,15 @@
 
 int Check_CPU_support_AES()
 {
+#ifdef __GNUC__
     unsigned int a,b,c,d;
     __asm__ __volatile__ ("cpuid":"=a" (a), "=b" (b), "=c" (c), "=d" (d) : "a" (1));
     return (c & 0x2000000);
+#else
+    unsigned int CPUInfo[4];
+    __cpuid(CPUInfo, 1);
+    return (CPUInfo[2] & 0x2000000);
+#endif
 }
 
 int main()
