@@ -1,3 +1,14 @@
+#!/bin/bash
+# run.sh
+#
+# Run of unit tests
+#
+# @author kryukov@frtk.ru
+# @version 1.0
+#
+# For Putty AES NI project
+# http://putty-aes-ni.googlecode.com/
+
 if [ -f "sshaesni" ];
 then
     echo "sshaeni is found"
