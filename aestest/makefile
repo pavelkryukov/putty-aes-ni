@@ -1,3 +1,11 @@
+# Makefile for unit tests
+#
+# @author kryukov@frtk.ru
+# @version 1.0
+#
+# For Putty AES NI project
+# http://putty-aes-ni.googlecode.com/
+
 CC:=gcc
 CFLAGS:=-O3 -Wall -std=c89 -pedantic -I ../Putty
 
