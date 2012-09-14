@@ -1,0 +1,15 @@
+= Primary sources =
+
+`[1]` PuTTY project website - http://www.chiark.greenend.org.uk/~sgtatham/putty/
+
+`[2]` Intel® Advanced Encryption Standard (AES) Instructions Set -
+http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set
+
+`[3]` Article with some additional info and links on AES-NI - 
+http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-instructions-aes-ni
+
+`[4]` Example of usage AES-NI+OpenSSL+OpenVPN with simple performance analysis - http://sysadminblog.ru/freebsd/2011/01/15/freebsd-aesni-openssl-openvpn.html (rus)
+
+= Additional sources =
+
+`[5]` Intel® 64 and IA-32 Architectures Software Developer Manuals  - http://www.intel.com/content/www/us/en/processors/architectures-software-developer-manuals.html
