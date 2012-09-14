@@ -34,13 +34,13 @@ else
 fi
 
 echo "Generating local trace..."
-./sshaesni original.txt
+./sshaesni
 
 echo "MD5 check..."
 original=$(md5 original.txt)
 changed=$(md5 output.txt)
 
-if [ "$a" = "$b" ]
+if [ "$original" = "$changed" ];
 then 
     echo "Tests passed!"
 else
