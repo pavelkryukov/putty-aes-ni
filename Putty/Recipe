@@ -192,6 +192,7 @@ CFLAGS = $(CFLAGS) /DHAS_GSSAPI /DSECURITY_WIN32
 RCFLAGS = $(RCFLAGS) $(VER)
 !end
 !begin cygwin vars
+CFLAGS += -DSECURITY_WIN32
 # XXX GNU-ism, but it's probably all right for a Cygwin/MinGW Makefile.
 RCFLAGS += $(patsubst -D%,--define %,$(VER))
 !end
