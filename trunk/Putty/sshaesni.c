@@ -1,34 +1,19 @@
-/*
- * aes.c - implementation of AES / Rijndael
+/**
+ * sshaesni.c
  * 
- * AES is a flexible algorithm as regards endianness: it has no
- * inherent preference as to which way round you should form words
- * from the input byte stream. It talks endlessly of four-byte
- * _vectors_, but never of 32-bit _words_ - there's no 32-bit
- * addition at all, which would force an endianness by means of
- * which way the carries went. So it would be possible to write a
- * working AES that read words big-endian, and another working one
- * that read them little-endian, just by computing a different set
- * of tables - with no speed drop.
- * 
- * It's therefore tempting to do just that, and remove the overhead
- * of GET_32BIT_MSB_FIRST() et al, allowing every system to use its
- * own endianness-native code; but I decided not to, partly for
- * ease of testing, and mostly because I like the flexibility that
- * allows you to encrypt a non-word-aligned block of memory (which
- * many systems would stop being able to do if I went the
- * endianness-dependent route).
- * 
- * This implementation reads and stores words big-endian, but
- * that's a minor implementation detail. By flipping the endianness
- * of everything in the E0..E3, D0..D3 tables, and substituting
- * GET_32BIT_LSB_FIRST for GET_32BIT_MSB_FIRST, I could create an
- * implementation that worked internally little-endian and gave the
- * same answers at the same speed.
+ * Implementation of AES / Rijndael for PuTTY
+ * Base on sshaes.c source file of PuTTY
+ *
+ * @author Putty AES NI team.
+ *
+ * For Putty AES NI project
+ * http://putty-aes-ni.googlecode.com/
  */
 
 #include <assert.h>
 #include <stdlib.h>
+
+#include <wmmintrin.h>
 
 #include "ssh.h"
 
@@ -1027,21 +1012,27 @@ static void aes_decrypt(AESContext * ctx, word32 * block)
 
 static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
+    __m128i feedback, data;
     word32 iv[4];
-    int i;
+    int i,j;
 
     assert((len & 15) == 0);
 
+    len /= 16;
+
     memcpy(iv, ctx->iv, sizeof(iv));
 
-    while (len > 0) {
-	for (i = 0; i < 4; i++)
-	    iv[i] ^= GET_32BIT_MSB_FIRST(blk + 4 * i);
-	aes_encrypt(ctx, iv);
-	for (i = 0; i < 4; i++)
-	    PUT_32BIT_MSB_FIRST(blk + 4 * i, iv[i]);
-	blk += 16;
-	len -= 16;
+    feedback = _mm_loadu_si128((__m128i*)iv);
+    for(i = 0; i < len; ++i)
+    {
+        data = _mm_loadu_si128 (&((__m128i*)blk)[i]);                        /* load block */
+        feedback = _mm_xor_si128 (data, feedback);                           /* xor block with iv */
+        feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[0]); /* xor block with key */
+        for(j = 1; j < ctx->Nr; ++j) /* rounds */
+            feedback = _mm_aesenc_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
+
+        feedback = _mm_aesenclast_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); /* last round */
+        _mm_storeu_si128(&((__m128i*)blk)[i], feedback);                     /* store block */
     }
 
     memcpy(ctx->iv, iv, sizeof(iv));
