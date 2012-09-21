@@ -1020,22 +1020,19 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 
     len /= 16;
 
-    memcpy(iv, ctx->iv, sizeof(iv));
-
-    feedback = _mm_loadu_si128((__m128i*)iv);
-    for(i = 0; i < len; ++i)
+    feedback = _mm_loadu_si128((__m128i*)(ctx->iv));
+    for (i = 0; i < len; ++i)
     {
-        data = _mm_loadu_si128 (&((__m128i*)blk)[i]);                        /* load block */
+        data     = _mm_loadu_si128 (&((__m128i*)blk)[i]);                    /* load block */
         feedback = _mm_xor_si128 (data, feedback);                           /* xor block with iv */
         feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[0]); /* xor block with key */
-        for(j = 1; j < ctx->Nr; ++j) /* rounds */
+        for (j = 1; j < ctx->Nr; ++j) /* rounds */
             feedback = _mm_aesenc_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
 
         feedback = _mm_aesenclast_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); /* last round */
         _mm_storeu_si128(&((__m128i*)blk)[i], feedback);                     /* store block */
     }
-
-    memcpy(ctx->iv, iv, sizeof(iv));
+    _mm_storeu_si128((__m128i*)(ctx->iv), feedback);                                /* update iv */
 }
 
 static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
