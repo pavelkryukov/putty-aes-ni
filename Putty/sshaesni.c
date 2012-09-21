@@ -1010,6 +1010,18 @@ static void aes_decrypt(AESContext * ctx, word32 * block)
     ctx->decrypt(ctx, block);
 }
 
+static void aes_wrap_16bytes(unsigned char *blk)
+{
+    for (j = 0; j < 4; ++j) {
+        blk[4 * j + 0] ^= blk[4 * j + 3];
+        blk[4 * j + 3] ^= blk[4 * j + 0];
+        blk[4 * j + 0] ^= blk[4 * j + 3];
+        blk[4 * j + 1] ^= blk[4 * j + 2];
+        blk[4 * j + 2] ^= blk[4 * j + 1];
+        blk[4 * j + 1] ^= blk[4 * j + 2];
+    }
+}
+
 static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
     __m128i feedback, data;
@@ -1023,6 +1035,7 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     for (i = 0; i < len; ++i)
     {
         int j;
+        aes_wrap_16bytes(blk);
         data     = _mm_loadu_si128 ((__m128i*)blk);                    /* load block */
         feedback = _mm_xor_si128 (data, feedback);                           /* xor block with iv */
         feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[0]); /* xor block with key */
@@ -1031,7 +1044,7 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 
         feedback = _mm_aesenclast_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); /* last round */
         _mm_storeu_si128((__m128i*)blk, feedback);                     /* store block */
-
+        aes_wrap_16bytes(blk);
         blk += 16;
     }
     _mm_storeu_si128((__m128i*)(ctx->iv), feedback);                                /* update iv */
