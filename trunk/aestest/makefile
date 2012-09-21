@@ -13,6 +13,11 @@ all: sshaes sshaesni
 
 %: ../Putty/%.c aestest.o puttymem.o
 	$(CC) $(CFLAGS) $^ -o $@
-	
+
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
+
+clean:
+	rm sshaes
+	rm sshaesni
+
