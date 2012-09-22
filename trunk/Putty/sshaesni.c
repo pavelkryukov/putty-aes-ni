@@ -1046,6 +1046,8 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
             feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
         }
         feedback = _mm_aesenclast_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); /* last round */
+        feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]);
+        feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
         _mm_storeu_si128((__m128i*)blk, feedback);                     /* store block */
         aes_wrap_16bytes(blk);
         blk += 16;
