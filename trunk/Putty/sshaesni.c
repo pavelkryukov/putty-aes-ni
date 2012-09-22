@@ -1012,6 +1012,7 @@ static void aes_decrypt(AESContext * ctx, word32 * block)
 
 static void aes_wrap_16bytes(unsigned char *blk)
 {
+    int j;
     for (j = 0; j < 4; ++j) {
         blk[4 * j + 0] ^= blk[4 * j + 3];
         blk[4 * j + 3] ^= blk[4 * j + 0];
@@ -1039,9 +1040,11 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
         data     = _mm_loadu_si128 ((__m128i*)blk);                    /* load block */
         feedback = _mm_xor_si128 (data, feedback);                           /* xor block with iv */
         feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[0]); /* xor block with key */
-        for (j = 1; j < ctx->Nr; ++j) /* rounds */
+        for (j = 1; j < ctx->Nr; ++j) /* rounds */ {
             feedback = _mm_aesenc_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
-
+            feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
+            feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
+        }
         feedback = _mm_aesenclast_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); /* last round */
         _mm_storeu_si128((__m128i*)blk, feedback);                     /* store block */
         aes_wrap_16bytes(blk);
