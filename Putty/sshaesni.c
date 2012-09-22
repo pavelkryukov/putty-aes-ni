@@ -905,6 +905,15 @@ static void aes_decrypt_nb_8(AESContext * ctx, word32 * block)
 #undef MAKEWORD
 #undef LASTWORD
 
+static void aes_wrap_bytes(unsigned char *blk)
+{
+    blk[0] ^= blk[3];
+    blk[3] ^= blk[0];
+    blk[0] ^= blk[3];
+    blk[1] ^= blk[2];
+    blk[2] ^= blk[1];
+    blk[1] ^= blk[2];
+}
 
 /*
  * Set up an AESContext. `keylen' and `blocklen' are measured in
@@ -998,6 +1007,12 @@ static void aes_setup(AESContext * ctx, int blocklen,
 	    ctx->invkeysched[i * ctx->Nb + j] = temp;
 	}
     }
+    
+    for (i = 0; i < (MAX_NR + 1) * MAX_NB; ++i) {
+        printf("%x ", ctx->keysched[i]);
+        aes_wrap_bytes((unsigned char*)(&ctx->keysched[i]));
+        printf("%x\n", ctx->keysched[i]);
+    }
 }
 
 static void aes_encrypt(AESContext * ctx, word32 * block)
@@ -1010,18 +1025,6 @@ static void aes_decrypt(AESContext * ctx, word32 * block)
     ctx->decrypt(ctx, block);
 }
 
-static void aes_wrap_16bytes(unsigned char *blk)
-{
-    int j;
-    for (j = 0; j < 4; ++j) {
-        blk[4 * j + 0] ^= blk[4 * j + 3];
-        blk[4 * j + 3] ^= blk[4 * j + 0];
-        blk[4 * j + 0] ^= blk[4 * j + 3];
-        blk[4 * j + 1] ^= blk[4 * j + 2];
-        blk[4 * j + 2] ^= blk[4 * j + 1];
-        blk[4 * j + 1] ^= blk[4 * j + 2];
-    }
-}
 
 static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
@@ -1036,7 +1039,6 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     for (i = 0; i < len; ++i)
     {
         int j;
-        aes_wrap_16bytes(blk);
         data     = _mm_loadu_si128 ((__m128i*)blk);                    /* load block */
         feedback = _mm_xor_si128 (data, feedback);                           /* xor block with iv */
         feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[0]); /* xor block with key */
@@ -1049,7 +1051,6 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
         feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]);
         feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
         _mm_storeu_si128((__m128i*)blk, feedback);                     /* store block */
-        aes_wrap_16bytes(blk);
         blk += 16;
     }
     _mm_storeu_si128((__m128i*)(ctx->iv), feedback);                                /* update iv */
@@ -1138,7 +1139,7 @@ void aes_iv(void *handle, unsigned char *iv)
     AESContext *ctx = (AESContext *)handle;
     int i;
     for (i = 0; i < 4; i++)
-	ctx->iv[i] = GET_32BIT_MSB_FIRST(iv + 4 * i);
+	ctx->iv[i] = GET_32BIT_LSB_FIRST(iv + 4 * i);
 }
 
 void aes_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len)
