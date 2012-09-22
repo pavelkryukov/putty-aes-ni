@@ -1008,11 +1008,8 @@ static void aes_setup(AESContext * ctx, int blocklen,
 	}
     }
     
-    for (i = 0; i < (MAX_NR + 1) * MAX_NB; ++i) {
-        printf("%x ", ctx->keysched[i]);
+    for (i = 0; i < (MAX_NR + 1) * MAX_NB; ++i)
         aes_wrap_bytes((unsigned char*)(&ctx->keysched[i]));
-        printf("%x\n", ctx->keysched[i]);
-    }
 }
 
 static void aes_encrypt(AESContext * ctx, word32 * block)
@@ -1028,32 +1025,34 @@ static void aes_decrypt(AESContext * ctx, word32 * block)
 
 static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
-    __m128i feedback, data;
+    __m128i enc, data;
+    __m128i* iv = (__m128i*)(ctx->iv);
     int i;
 
     assert((len & 15) == 0);
 
     len /= 16;
 
-    feedback = _mm_loadu_si128((__m128i*)(ctx->iv));
+    enc = _mm_loadu_si128(iv);                        /* load IV            */
     for (i = 0; i < len; ++i)
     {
         int j;
-        data     = _mm_loadu_si128 ((__m128i*)blk);                    /* load block */
-        feedback = _mm_xor_si128 (data, feedback);                           /* xor block with iv */
-        feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[0]); /* xor block with key */
-        for (j = 1; j < ctx->Nr; ++j) /* rounds */ {
-            feedback = _mm_aesenc_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
-            feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
-            feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
-        }
-        feedback = _mm_aesenclast_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); /* last round */
-        feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]);
-        feedback = _mm_xor_si128 (feedback, ((__m128i*)(ctx->keysched))[j]); 
-        _mm_storeu_si128((__m128i*)blk, feedback);                     /* store block */
+        int Nr = ctx->Nr;                             /* Number of rounds   */
+
+        __m128i* block    = (__m128i*)blk;            /* Block pointer      */
+        __m128i* keysched = (__m128i*)(ctx->keysched);/* Key schedule ptr   */
+
+        data = _mm_loadu_si128(block);                /* load block         */
+        enc  = _mm_xor_si128(data, enc);              /* xor block with iv  */
+        enc  = _mm_xor_si128(enc, keysched[0]);       /* xor block with key */
+        for (j = 1; j < Nr; ++j)
+            enc = _mm_aesenc_si128(enc, keysched[j]); /* perform rounds     */
+
+        enc = _mm_aesenclast_si128(enc, keysched[j]); /* last round         */
+        _mm_storeu_si128(block, enc);                 /* store block        */
         blk += 16;
     }
-    _mm_storeu_si128((__m128i*)(ctx->iv), feedback);                                /* update iv */
+    _mm_storeu_si128(iv, enc);                        /* update IV          */
 }
 
 static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
