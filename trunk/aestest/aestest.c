@@ -38,7 +38,8 @@ typedef enum
 typedef enum
 {
     ENCRYPT,
-    DECRYPT
+    DECRYPT,
+    SDCTR
 } TestType;
 
 static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned blocklen, FILE *file)
@@ -85,6 +86,9 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
     case DECRYPT:
         aes_ssh2_decrypt_blk(handle, blk, blocklen);
         break;
+    case SDCTR:
+        aes_ssh2_sdctr(handle, blk, blocklen);
+        break;
     }
     
     for (i = 0; i < blocklen; ++i)
@@ -113,6 +117,7 @@ int main()
             for (k = 0; k < keytypes_s; ++k) {
                 test(keytypes[k], ENCRYPT, seed, blocksizes[b], fp);
                 test(keytypes[k], DECRYPT, seed, blocksizes[b], fp);
+                test(keytypes[k], SDCTR, seed, blocksizes[b], fp);
             }
     
     fclose(fp);
