@@ -626,7 +626,6 @@ static void aes_decrypt(AESContext * ctx, word32 * block)
 static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
     __m128i enc;
-    __m128i* iv    = (__m128i*)(ctx->iv);
     __m128i* block = (__m128i*)blk;
     int i;
 
@@ -635,7 +634,7 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     len /= 16;
 
     /* Load IV */
-    enc = _mm_loadu_si128(iv);
+    enc = _mm_loadu_si128((__m128i*)(ctx->iv));
     for (i = 0; i < len; ++i)
     {
         /* Key schedule ptr   */
@@ -674,9 +673,9 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
         _mm_storeu_si128(block, enc);
         ++block;                                        
     }
-    
+
     /* Update IV */
-    _mm_storeu_si128(iv, enc);
+    _mm_storeu_si128((__m128i*)(ctx->iv), enc);
 }
 
 static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
@@ -706,6 +705,7 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
 {
     __m128i iv;
+    __m128i* block = (__m128i*)blk;
     int i;
 
     assert((len & 15) == 0);
@@ -716,18 +716,36 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
     for (i = 0; i < len; ++i)
     {
         __m128i enc;
-        int j;
-        int Nr = ctx->Nr;                             /* Number of rounds   */
- 
-        __m128i* block    = (__m128i*)blk;            /* Block pointer      */
         __m128i* keysched = (__m128i*)(ctx->keysched);/* Key schedule ptr   */
 
-        enc = _mm_xor_si128(iv, keysched[0]);      /* init and xor with key */
-        for (j = 1; j < Nr; ++j)
-            enc = _mm_aesenc_si128(enc, keysched[j]); /* perform rounds     */
-        enc = _mm_aesenclast_si128(enc, keysched[j]); /* last round         */
- 
-        enc = _mm_xor_si128(enc, _mm_loadu_si128(block)); /* xor and store  */
+        /* Perform rounds */
+        enc  = _mm_xor_si128(iv, *(keysched++)); /* Note that we use IV */
+        switch (ctx->Nr)
+        {
+        case 14: 
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+        case 12:
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+        case 10:
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenclast_si128(enc, *(keysched++));
+            break;
+        default:
+            assert(0);
+        }
+
+        /* Xor with block and store result */
+        enc = _mm_xor_si128(enc, _mm_loadu_si128(block));
         _mm_storeu_si128(block, enc);                 
 
         /* Update of IV. FIXME: we need to simplify it */
@@ -740,9 +758,11 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
                     break;
             iv = _mm_loadu_si128((__m128i*)temp);
         }
-        blk += 16;
+        ++block;
     }
-    _mm_storeu_si128((__m128i*)ctx->iv, iv);                        /* update IV          */
+
+    /* Update IV */
+    _mm_storeu_si128((__m128i*)ctx->iv, iv);
 }
 
 void *aes_make_context(void)
