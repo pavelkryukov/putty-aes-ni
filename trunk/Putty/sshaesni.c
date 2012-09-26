@@ -753,9 +753,13 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
             word32 temp[4];
             int k;
             _mm_storeu_si128((__m128i*)temp, iv);
+            for (k = 0; k < 4; ++k)		
+                aes_wrap_bytes((unsigned char*)&temp[k]);
             for (k = 3; k >= 0; k--)
-                if ((temp[k] = (temp[k] + (1ul << 24)) & 0xffffffff) != 0)
-                    break;
+                if ((temp[k] = (temp[k] + 1) & 0xffffffff) != 0)
+                    break;            
+            for (k = 0; k < 4; ++k)		
+                aes_wrap_bytes((unsigned char*)&temp[k]);
             iv = _mm_loadu_si128((__m128i*)temp);
         }
         ++block;
