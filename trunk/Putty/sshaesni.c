@@ -625,34 +625,58 @@ static void aes_decrypt(AESContext * ctx, word32 * block)
 
 static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
-    __m128i enc, data;
-    __m128i* iv = (__m128i*)(ctx->iv);
+    __m128i enc;
+    __m128i* iv    = (__m128i*)(ctx->iv);
+    __m128i* block = (__m128i*)blk;
     int i;
 
     assert((len & 15) == 0);
 
     len /= 16;
 
-    enc = _mm_loadu_si128(iv);                        /* load IV            */
+    /* Load IV */
+    enc = _mm_loadu_si128(iv);
     for (i = 0; i < len; ++i)
     {
-        int j;
-        int Nr = ctx->Nr;                             /* Number of rounds   */
+        /* Key schedule ptr   */
+        __m128i* keysched = (__m128i*)(ctx->keysched);
 
-        __m128i* block    = (__m128i*)blk;            /* Block pointer      */
-        __m128i* keysched = (__m128i*)(ctx->keysched);/* Key schedule ptr   */
+        /* Xor data with IV */
+        enc  = _mm_xor_si128(_mm_loadu_si128(block), enc);
+        
+        /* Perform rounds */
+        enc  = _mm_xor_si128(enc, *(keysched++));
+        switch (ctx->Nr)
+        {
+        case 14: 
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+        case 12:
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+        case 10:
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenclast_si128(enc, *(keysched++));
+            break;
+        default:
+            assert(0);
+        }
 
-        data = _mm_loadu_si128(block);                /* load block         */
-        enc  = _mm_xor_si128(data, enc);              /* xor block with iv  */
-        enc  = _mm_xor_si128(enc, keysched[0]);       /* xor block with key */
-        for (j = 1; j < Nr; ++j)
-            enc = _mm_aesenc_si128(enc, keysched[j]); /* perform rounds     */
-
-        enc = _mm_aesenclast_si128(enc, keysched[j]); /* last round         */
-        _mm_storeu_si128(block, enc);                 /* store block        */
-        blk += 16;
+        /* Store and go to next block */
+        _mm_storeu_si128(block, enc);
+        ++block;                                        
     }
-    _mm_storeu_si128(iv, enc);                        /* update IV          */
+    
+    /* Update IV */
+    _mm_storeu_si128(iv, enc);
 }
 
 static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
