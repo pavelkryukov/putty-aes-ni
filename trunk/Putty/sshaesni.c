@@ -681,7 +681,7 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 
 static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
 {
-    __m128i b, iv;
+    __m128i iv;
     int i;
 
     assert((len & 15) == 0);
@@ -691,33 +691,29 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
     
     for (i = 0; i < len; ++i)
     {
+        __m128i enc;
         int j;
         int Nr = ctx->Nr;                             /* Number of rounds   */
  
         __m128i* block    = (__m128i*)blk;            /* Block pointer      */
         __m128i* keysched = (__m128i*)(ctx->keysched);/* Key schedule ptr   */
 
-        b  = _mm_or_si128(iv, iv); /* FIXME: there should be easy way for mov)*/
-
-        b  = _mm_xor_si128(b, keysched[0]);       /* xor block with key */
+        enc = _mm_xor_si128(iv, keysched[0]);      /* init and xor with key */
         for (j = 1; j < Nr; ++j)
-            b = _mm_aesenc_si128(b, keysched[j]); /* perform rounds     */
-        b = _mm_aesenclast_si128(b, keysched[j]); /* last round         */
-        b = _mm_xor_si128(b, _mm_loadu_si128(block)); /* xor block with data */
-        _mm_storeu_si128(block, b);               /* store block to memory */
+            enc = _mm_aesenc_si128(enc, keysched[j]); /* perform rounds     */
+        enc = _mm_aesenclast_si128(enc, keysched[j]); /* last round         */
+ 
+        enc = _mm_xor_si128(enc, _mm_loadu_si128(block)); /* xor and store  */
+        _mm_storeu_si128(block, enc);                 
 
         /* Update of IV. FIXME: we need to simplify it */
         { 
             word32 temp[4];
             int k;
             _mm_storeu_si128((__m128i*)temp, iv);
-            for (k = 0; k < 4; ++k)
-                aes_wrap_bytes((unsigned char*)&temp[k]);
             for (k = 3; k >= 0; k--)
-                if ((temp[k] = (temp[k] + 1) & 0xffffffff) != 0)
+                if ((temp[k] = (temp[k] + (1ul << 24)) & 0xffffffff) != 0)
                     break;
-            for (k = 0; k < 4; ++k)
-                aes_wrap_bytes((unsigned char*)&temp[k]);
             iv = _mm_loadu_si128((__m128i*)temp);
         }
         blk += 16;
