@@ -17,7 +17,9 @@ all: sshaes sshaesni
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
+cpuid: cpuid.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 clean:
-	rm sshaes
-	rm sshaesni
+	rm sshaes sshaesni
 
