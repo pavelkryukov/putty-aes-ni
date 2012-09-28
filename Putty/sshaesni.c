@@ -708,11 +708,16 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
 {
     __m128i iv;
+    __m128i BSWAP_EPI64, ONE, ZERO;
     __m128i* block = (__m128i*)blk;
     int i;
 
     assert((len & 15) == 0);
     len /= 16;
+
+    BSWAP_EPI64 = _mm_setr_epi8(3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
+    ONE  = _mm_setr_epi32(0,0,0,1);
+    ZERO =  _mm_setzero_si128();
 
     iv = _mm_loadu_si128((__m128i*)ctx->iv);
 
@@ -751,20 +756,14 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
         enc = _mm_xor_si128(enc, _mm_loadu_si128(block));
         _mm_storeu_si128(block, enc);
 
-        /* Update of IV. FIXME: we need to simplify it */
-        {
-            __m128i BSWAP_EPI64, ONE, ZERO, tmp;
-            BSWAP_EPI64 = _mm_setr_epi8(3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
-            ONE  = _mm_setr_epi32(0,0,0,1);
-            ZERO =  _mm_setzero_si128();
+        /* Increment of IV */
+        iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64); /* Swap endianess     */
+        iv  = _mm_add_epi64(iv, ONE);            /* Inc low part       */
+        enc = _mm_cmpeq_epi64(iv, ZERO);         /* Check for carry    */
+        enc = _mm_unpacklo_epi64(ZERO, enc);     /* Pack carry reg     */
+        iv  = _mm_sub_epi64(iv, enc);            /* Sub carry reg      */
+        iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64); /* Swap enianess back */
 
-            iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64);
-            iv  = _mm_add_epi64(iv, ONE);
-            tmp = _mm_cmpeq_epi64(iv, ZERO);
-            tmp = _mm_unpacklo_epi64(ZERO, tmp);
-            iv  = _mm_sub_epi64(iv, tmp);
-            iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64);
-        }
         ++block;
     }
 
