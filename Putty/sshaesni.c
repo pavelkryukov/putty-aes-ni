@@ -753,17 +753,17 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
 
         /* Update of IV. FIXME: we need to simplify it */
         {
-            __m128i BSWAP_EPI64;
-            word32 temp[4];
-            int k;            
+            __m128i BSWAP_EPI64, ONE, ZERO, tmp;
             BSWAP_EPI64 = _mm_setr_epi8(3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
-            iv = _mm_shuffle_epi8(iv, BSWAP_EPI64);
-            _mm_storeu_si128((__m128i*)temp, iv);
-            for (k = 3; k >= 0; k--)
-                if ((temp[k] = (temp[k] + 1) & 0xffffffff) != 0)
-                    break;
-            iv = _mm_loadu_si128((__m128i*)temp);
-            iv = _mm_shuffle_epi8(iv, BSWAP_EPI64);
+            ONE  = _mm_setr_epi32(0,0,0,1);
+            ZERO =  _mm_setzero_si128();
+
+            iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64);
+            iv  = _mm_add_epi64(iv, ONE);
+            tmp = _mm_cmpeq_epi64(iv, ZERO);
+            tmp = _mm_unpacklo_epi64(ZERO, tmp);
+            iv  = _mm_sub_epi64(iv, tmp);
+            iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64);
         }
         ++block;
     }
