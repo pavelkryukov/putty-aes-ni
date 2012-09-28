@@ -21,5 +21,5 @@ cpuid: cpuid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 clean:
-	rm sshaes sshaesni
+	rm sshaes sshaesni cpuid
 

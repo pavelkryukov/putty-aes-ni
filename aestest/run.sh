@@ -4,6 +4,7 @@
 # Run of unit tests
 #
 # @author kryukov@frtk.ru
+# @author Maxim Kuznetsov <maks.kuznetsov@gmail.com>
 # @version 1.0
 #
 # For Putty AES NI project
@@ -16,12 +17,14 @@ CPUID_AES="cpuid"
 # Command for running SSHAESNI test
 RUNAESNI=./$SSHAESNI
 
-# 
+####
+
+echo -n "Checking for $SSHAES and $SSHAESNI... " 
 if [ -f $SSHAES -a -f $SSHAESNI ];
 then
-    echo "$SSHAES and $SSHAESNI are found"
+    echo "found"
 else
-    echo "$SSHAES or $SSHAESNI not found. Running make all"
+    echo "not found. Running make all"
     make all
 fi
 
@@ -31,14 +34,27 @@ then
     make cpuid
 fi
 
-# Check for AES-NI support
+####
+
+echo -n "Checking for AES-NI support... "
 if ./cpuid -q ;
 then
-    echo "Your CPU supports AES-NI"
+    echo "found"
 else
-     echo "Your CPU doesn't support AES-NI, using SDE"
-     RUNAESNI="sde -- "$RUNAESNI
+    echo "not found"
+    echo -n "Checking for SDE... "
+    
+    if [ ! `which sde` ];
+        then
+            echo -e "not found"
+            exit
+        else
+            echo "found `sde -version | grep 'Ver' | sed 's/\(.*\)Version\:\( *\)\(.*\)/\3/g'`"
+            RUNAESNI="sde -- "$RUNAESNI
+        fi
 fi
+
+####
 
 if [ -f "original.txt" ];
 then
@@ -51,6 +67,8 @@ fi
 
 echo "Generating aes-ni trace..."
 $RUNAESNI
+
+####
 
 echo "MD5 check..."
 original=$(md5sum original.txt)
