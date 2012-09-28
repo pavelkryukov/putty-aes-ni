@@ -3,9 +3,9 @@
 #
 # Run of unit tests
 #
-# @author kryukov@frtk.ru
+# @author Pavel Kryukov <kryukov@frtk.ru>
 # @author Maxim Kuznetsov <maks.kuznetsov@gmail.com>
-# @version 1.0
+# @version 2.0
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
