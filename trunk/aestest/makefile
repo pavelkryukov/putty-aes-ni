@@ -18,8 +18,7 @@ all: sshaes sshaesni
 	$(CC) $(CFLAGS) $^ -c -o $@
 
 cpuid: cpuid.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ -DSILENT
 
 clean:
 	rm sshaes sshaesni cpuid
-
