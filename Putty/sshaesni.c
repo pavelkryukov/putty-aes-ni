@@ -15,7 +15,6 @@
 
 
 #include <wmmintrin.h>
-#include <emmintrin.h>
 #include <smmintrin.h>
 
 #include "ssh.h"
@@ -707,17 +706,16 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 
 static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
 {
+    const __m128i BSWAP_EPI64 = _mm_setr_epi8(3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
+    const __m128i ONE  = _mm_setr_epi32(0,0,0,1);
+    const __m128i ZERO = _mm_setzero_si128();
     __m128i iv;
-    __m128i BSWAP_EPI64, ONE, ZERO;
+
     __m128i* block = (__m128i*)blk;
     int i;
 
     assert((len & 15) == 0);
     len /= 16;
-
-    BSWAP_EPI64 = _mm_setr_epi8(3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
-    ONE  = _mm_setr_epi32(0,0,0,1);
-    ZERO =  _mm_setzero_si128();
 
     iv = _mm_loadu_si128((__m128i*)ctx->iv);
 
