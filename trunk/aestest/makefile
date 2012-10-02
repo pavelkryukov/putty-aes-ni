@@ -1,24 +1,31 @@
 # Makefile for unit tests
 #
 # @author kryukov@frtk.ru
-# @version 1.0
+# @version 2.0
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
 
 CC=gcc
-CFLAGS=-O3 -Wall -Werror -maes -msse4 -std=c89 -pedantic -I ../Putty
+CFLAGS=-Wall -Werror -maes -msse4 -std=c89 -pedantic -I ../Putty
+OPT=-O3
+NOOPT=-O0
 
-all: sshaes sshaesni
+TARGETS=sshaes-test sshaesni-test sshaes-perf sshaesni-perf
 
-%: ../Putty/%.c aestest.o puttymem.o
-	$(CC) $(CFLAGS) $^ -o $@
+all: $(TARGETS)
+
+%-perf: ../Putty/%.c aesperf.o puttymem.o
+	$(CC) $(NOOPT) $(CFLAGS) $^ -o $@
+
+%-test: ../Putty/%.c aestest.o puttymem.o
+	$(CC) $(OPT) $(CFLAGS) $^ -o $@
 
 %.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
 cpuid: cpuid.c
-	$(CC) $(CFLAGS) $^ -o $@ -DSILENT
+	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -DSILENT
 
 clean:
-	rm sshaes sshaesni cpuid
+	rm $(TARGETS) cpuid *.exe

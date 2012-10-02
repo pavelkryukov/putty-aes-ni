@@ -1,27 +1,14 @@
 /**
- * aestest.c
+ * aesperf.c
  *
- * Unit testing for AES cryptoalgorithm
+ * Measuring time of AES cryptoalgorithm
  *
  * @author kryukov@frtk.ru
- * @version 1.4
+ * @version 1.0
  *
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
  */
-
-/*
- * Coverage:
- *
- * void *aes_make_context(void);
- * void aes_free_context(void *handle);
- * void aes128_key(void *handle, unsigned char *key);
- * void aes192_key(void *handle, unsigned char *key);
- * void aes256_key(void *handle, unsigned char *key);
- * void aes_iv(void *handle, unsigned char *iv);
- * void aes_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len);
- * void aes_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len);
-*/
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -49,6 +36,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
     unsigned char *key = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
     unsigned char *blk = (unsigned char*)malloc(sizeof(unsigned char) * blocklen);
     unsigned char *iv  = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
+    clock_t now;
 
     unsigned i;
 
@@ -78,6 +66,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
     
     aes_iv(handle, key);
 
+    now = clock();
     switch (testtype)
     {
     case ENCRYPT:
@@ -91,36 +80,29 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
         break;
     }
     
-    for (i = 0; i < blocklen; ++i)
-        fprintf(file,"%02x ", blk[i]);
-        
-    fprintf(file, "\n\n");
-    
+    now = clock() - now;
+    fprintf(file, "%d\t%d\t%d\t%d\n", testtype, keytype, blocklen, now);
+
     aes_free_context(handle);
     free(key), free(blk), free(iv);
 }
 
 #define DIM(A) (sizeof(A) / sizeof(A[0]))
 
-int main(int args, char** argv)
+int main()
 {
-    FILE *fp = fopen("test-output.txt", "w");
+    FILE *fp = fopen("perf-output.txt", "w");
     KeyType keytypes[] = {AES128, AES192, AES256};
     size_t keytypes_s = DIM(keytypes);
-
-    size_t blocksizes[] = {64, 128, 192, 256, 1024, 2048, 65536};    
-    size_t blocksizes_s = DIM(blocksizes);
-    unsigned k, b, seed, n;
-
-    n = strtoul(argv[1], NULL, 0);
-
-    for (seed = 2; seed < n; ++seed)
-        for (b = 0; b < blocksizes_s; ++b)
-            for (k = 0; k < keytypes_s; ++k) {
-                test(keytypes[k], ENCRYPT, seed, blocksizes[b], fp);
-                test(keytypes[k], DECRYPT, seed, blocksizes[b], fp);
-                test(keytypes[k], SDCTR, seed, blocksizes[b], fp);
-            }
+    int b, k;
+    
+    for (b = (1 << 20); b < (1 << 30); b += ((b >> 1) & ~0xf))
+        for (k = 0; k < keytypes_s; ++k) {
+            test(keytypes[k], ENCRYPT, 4134, b, fp);
+            test(keytypes[k], DECRYPT, 2343, b, fp);
+            test(keytypes[k], SDCTR, 4321, b, fp);
+            fflush(fp);
+        }
     
     fclose(fp);
     
