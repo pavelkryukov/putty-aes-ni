@@ -5,22 +5,33 @@
 #
 # @author Pavel Kryukov <kryukov@frtk.ru>
 # @author Maxim Kuznetsov <maks.kuznetsov@gmail.com>
-# @version 2.0
+# @version 3.0
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
 
-SSHAES="sshaes"
-SSHAESNI="sshaesni"
+SSHAES_TEST="sshaes-test"
+SSHAESNI_TEST="sshaesni-test"
+SSHAES_PERF="sshaes-perf"
+SSHAESNI_PERF="sshaesni-perf"
 CPUID_AES="cpuid"
 
+if [ "$1" = "-p" ];
+then
+    echo "Perfomance mode enabled"
+    SEEDS="10"
+else
+    SEEDS="1000"
+fi
+
 # Command for running SSHAESNI test
-RUNAESNI=./$SSHAESNI
+RUNAESNI_TEST=./$SSHAESNI_TEST" "$SEEDS
+RUNAESNI_PERF=./$SSHAESNI_PERF
 
 ####
 
-echo -n "Checking for $SSHAES and $SSHAESNI... " 
-if [ -f $SSHAES -a -f $SSHAESNI ];
+echo -n "Checking for binaries... " 
+if [ -f $SSHAES_TEST -a -f $SSHAESNI_TEST -a -f $SSHAES_PERF -a -f $SSHAES_PERF ];
 then
     echo "found"
 else
@@ -50,33 +61,54 @@ else
             exit
         else
             echo "found `sde -version | grep 'Ver' | sed 's/\(.*\)Version\:\( *\)\(.*\)/\3/g'`"
-            RUNAESNI="sde -- "$RUNAESNI
+            RUNAESNI_TEST="sde -- "$RUNAESNI_TEST
+            RUNAESNI_PERF="sde -- "$RUNAESNI_PERF
         fi
 fi
 
 ####
 
-if [ -f "original.txt" ];
+if [ -f "test-original-$SEEDS.txt" ];
 then
     echo "Original trace is found, it will be reused"
 else
     echo "No original trace file. It will be generated..."
-    ./$SSHAES
-    mv output.txt original.txt
+    ./$SSHAES_TEST $SEEDS
+    mv test-output.txt test-original-$SEEDS.txt
 fi
 
 echo "Generating aes-ni trace..."
-$RUNAESNI
+$RUNAESNI_TEST
 
 ####
 
 echo "MD5 check..."
-original=$(md5sum original.txt)
-changed=$(md5sum output.txt)
+original=$(md5sum test-original-$SEEDS.txt | cut -d ' ' -f 1)
+changed=$(md5sum test-output.txt | cut -d ' ' -f 1)
 
 if [ "$original" = "$changed" ];
 then 
     echo "Tests passed!"
 else
     echo "Tests not passed!"
+    exit
 fi
+
+#####
+
+if [ ! "$1" = "-p"];
+then
+    exit
+fi
+
+echo "Performance data generating ..."
+if [ -f "perf-original.txt" ];
+then
+    echo "Original perf data is found, it will be reused"
+else
+    echo "No original perf file. It will be generated..."
+    ./$SSHAES_PERF
+    mv perf-output.txt perf-original.txt
+fi
+echo "Generating aes-ni perf data..."
+$RUNAESNI_PERF
