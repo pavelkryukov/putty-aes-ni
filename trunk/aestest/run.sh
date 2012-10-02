@@ -78,5 +78,5 @@ if [ "$original" = "$changed" ];
 then 
     echo "Tests passed!"
 else
-    vim -d original.txt output.txt
+    echo "Tests not passed!"
 fi
