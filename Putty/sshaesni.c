@@ -13,7 +13,6 @@
 #include <assert.h>
 #include <stdlib.h>
 
-
 #include <wmmintrin.h>
 #include <smmintrin.h>
 
@@ -28,9 +27,9 @@
 typedef struct AESContext AESContext;
 
 struct AESContext {
+    word32 a[2]; /* for aligment */
     word32 keysched[(MAX_NR + 1) * MAX_NB];
     word32 invkeysched[(MAX_NR + 1) * MAX_NB];
-    void (*decrypt) (AESContext * ctx, word32 * block);
     word32 iv[MAX_NB];
     int Nb, Nr;
 };
@@ -68,41 +67,6 @@ static const unsigned char Sbox[256] = {
     0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf,
     0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68,
     0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16
-};
-
-static const unsigned char Sboxinv[256] = {
-    0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38,
-    0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb,
-    0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87,
-    0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb,
-    0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d,
-    0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e,
-    0x08, 0x2e, 0xa1, 0x66, 0x28, 0xd9, 0x24, 0xb2,
-    0x76, 0x5b, 0xa2, 0x49, 0x6d, 0x8b, 0xd1, 0x25,
-    0x72, 0xf8, 0xf6, 0x64, 0x86, 0x68, 0x98, 0x16,
-    0xd4, 0xa4, 0x5c, 0xcc, 0x5d, 0x65, 0xb6, 0x92,
-    0x6c, 0x70, 0x48, 0x50, 0xfd, 0xed, 0xb9, 0xda,
-    0x5e, 0x15, 0x46, 0x57, 0xa7, 0x8d, 0x9d, 0x84,
-    0x90, 0xd8, 0xab, 0x00, 0x8c, 0xbc, 0xd3, 0x0a,
-    0xf7, 0xe4, 0x58, 0x05, 0xb8, 0xb3, 0x45, 0x06,
-    0xd0, 0x2c, 0x1e, 0x8f, 0xca, 0x3f, 0x0f, 0x02,
-    0xc1, 0xaf, 0xbd, 0x03, 0x01, 0x13, 0x8a, 0x6b,
-    0x3a, 0x91, 0x11, 0x41, 0x4f, 0x67, 0xdc, 0xea,
-    0x97, 0xf2, 0xcf, 0xce, 0xf0, 0xb4, 0xe6, 0x73,
-    0x96, 0xac, 0x74, 0x22, 0xe7, 0xad, 0x35, 0x85,
-    0xe2, 0xf9, 0x37, 0xe8, 0x1c, 0x75, 0xdf, 0x6e,
-    0x47, 0xf1, 0x1a, 0x71, 0x1d, 0x29, 0xc5, 0x89,
-    0x6f, 0xb7, 0x62, 0x0e, 0xaa, 0x18, 0xbe, 0x1b,
-    0xfc, 0x56, 0x3e, 0x4b, 0xc6, 0xd2, 0x79, 0x20,
-    0x9a, 0xdb, 0xc0, 0xfe, 0x78, 0xcd, 0x5a, 0xf4,
-    0x1f, 0xdd, 0xa8, 0x33, 0x88, 0x07, 0xc7, 0x31,
-    0xb1, 0x12, 0x10, 0x59, 0x27, 0x80, 0xec, 0x5f,
-    0x60, 0x51, 0x7f, 0xa9, 0x19, 0xb5, 0x4a, 0x0d,
-    0x2d, 0xe5, 0x7a, 0x9f, 0x93, 0xc9, 0x9c, 0xef,
-    0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0,
-    0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61,
-    0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26,
-    0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d
 };
 
 static const word32 D0[256] = {
@@ -370,149 +334,6 @@ static const word32 D3[256] = {
     0xcb84617b, 0x32b670d5, 0x6c5c7448, 0xb85742d0,
 };
 
-/*
- * Common macros in both the encryption and decryption routines.
- */
-#define ADD_ROUND_KEY_4 (block[0]^=*keysched++, block[1]^=*keysched++, \
-                 block[2]^=*keysched++, block[3]^=*keysched++)
-#define ADD_ROUND_KEY_6 (block[0]^=*keysched++, block[1]^=*keysched++, \
-                 block[2]^=*keysched++, block[3]^=*keysched++, \
-                 block[4]^=*keysched++, block[5]^=*keysched++)
-#define ADD_ROUND_KEY_8 (block[0]^=*keysched++, block[1]^=*keysched++, \
-                 block[2]^=*keysched++, block[3]^=*keysched++, \
-                 block[4]^=*keysched++, block[5]^=*keysched++, \
-                 block[6]^=*keysched++, block[7]^=*keysched++)
-#define MOVEWORD(i) ( block[i] = newstate[i] )
-
-/*
- * Macros for the decryption routine. There are three decryption
- * cores, for Nb=4,6,8.
- */
-#define MAKEWORD(i) ( newstate[i] = (D0[(block[i] >> 24) & 0xFF] ^ \
-                     D1[(block[(i+C1)%Nb] >> 16) & 0xFF] ^ \
-                     D2[(block[(i+C2)%Nb] >> 8) & 0xFF] ^ \
-                     D3[block[(i+C3)%Nb] & 0xFF]) )
-#define LASTWORD(i) (newstate[i] = (Sboxinv[(block[i] >> 24) & 0xFF] << 24) | \
-               (Sboxinv[(block[(i+C1)%Nb] >> 16) & 0xFF] << 16) | \
-               (Sboxinv[(block[(i+C2)%Nb] >>  8) & 0xFF] <<  8) | \
-               (Sboxinv[(block[(i+C3)%Nb]      ) & 0xFF]      ) )
-
-/*
- * Core decrypt routines, expecting word32 inputs read big-endian
- * from the byte-oriented input stream.
- */
-static void aes_decrypt_nb_4(AESContext * ctx, word32 * block)
-{
-    int i;
-    static const int C1 = 4 - 1, C2 = 4 - 2, C3 = 4 - 3, Nb = 4;
-    word32 *keysched = ctx->invkeysched;
-    word32 newstate[4];
-    for (i = 0; i < ctx->Nr - 1; i++) {
-    ADD_ROUND_KEY_4;
-    MAKEWORD(0);
-    MAKEWORD(1);
-    MAKEWORD(2);
-    MAKEWORD(3);
-    MOVEWORD(0);
-    MOVEWORD(1);
-    MOVEWORD(2);
-    MOVEWORD(3);
-    }
-    ADD_ROUND_KEY_4;
-    LASTWORD(0);
-    LASTWORD(1);
-    LASTWORD(2);
-    LASTWORD(3);
-    MOVEWORD(0);
-    MOVEWORD(1);
-    MOVEWORD(2);
-    MOVEWORD(3);
-    ADD_ROUND_KEY_4;
-}
-static void aes_decrypt_nb_6(AESContext * ctx, word32 * block)
-{
-    int i;
-    static const int C1 = 6 - 1, C2 = 6 - 2, C3 = 6 - 3, Nb = 6;
-    word32 *keysched = ctx->invkeysched;
-    word32 newstate[6];
-    for (i = 0; i < ctx->Nr - 1; i++) {
-    ADD_ROUND_KEY_6;
-    MAKEWORD(0);
-    MAKEWORD(1);
-    MAKEWORD(2);
-    MAKEWORD(3);
-    MAKEWORD(4);
-    MAKEWORD(5);
-    MOVEWORD(0);
-    MOVEWORD(1);
-    MOVEWORD(2);
-    MOVEWORD(3);
-    MOVEWORD(4);
-    MOVEWORD(5);
-    }
-    ADD_ROUND_KEY_6;
-    LASTWORD(0);
-    LASTWORD(1);
-    LASTWORD(2);
-    LASTWORD(3);
-    LASTWORD(4);
-    LASTWORD(5);
-    MOVEWORD(0);
-    MOVEWORD(1);
-    MOVEWORD(2);
-    MOVEWORD(3);
-    MOVEWORD(4);
-    MOVEWORD(5);
-    ADD_ROUND_KEY_6;
-}
-static void aes_decrypt_nb_8(AESContext * ctx, word32 * block)
-{
-    int i;
-    static const int C1 = 8 - 1, C2 = 8 - 3, C3 = 8 - 4, Nb = 8;
-    word32 *keysched = ctx->invkeysched;
-    word32 newstate[8];
-    for (i = 0; i < ctx->Nr - 1; i++) {
-    ADD_ROUND_KEY_8;
-    MAKEWORD(0);
-    MAKEWORD(1);
-    MAKEWORD(2);
-    MAKEWORD(3);
-    MAKEWORD(4);
-    MAKEWORD(5);
-    MAKEWORD(6);
-    MAKEWORD(7);
-    MOVEWORD(0);
-    MOVEWORD(1);
-    MOVEWORD(2);
-    MOVEWORD(3);
-    MOVEWORD(4);
-    MOVEWORD(5);
-    MOVEWORD(6);
-    MOVEWORD(7);
-    }
-    ADD_ROUND_KEY_8;
-    LASTWORD(0);
-    LASTWORD(1);
-    LASTWORD(2);
-    LASTWORD(3);
-    LASTWORD(4);
-    LASTWORD(5);
-    LASTWORD(6);
-    LASTWORD(7);
-    MOVEWORD(0);
-    MOVEWORD(1);
-    MOVEWORD(2);
-    MOVEWORD(3);
-    MOVEWORD(4);
-    MOVEWORD(5);
-    MOVEWORD(6);
-    MOVEWORD(7);
-    ADD_ROUND_KEY_8;
-}
-
-#undef MAKEWORD
-#undef LASTWORD
-
 static void aes_wrap_bytes(unsigned char *blk)
 {
     blk[0] ^= blk[3];
@@ -542,16 +363,6 @@ static void aes_setup(AESContext * ctx, int blocklen,
     Nk = keylen / 4;
     ctx->Nb = blocklen / 4;
     ctx->Nr = 6 + (ctx->Nb > Nk ? ctx->Nb : Nk);
-
-    /*
-     * Assign core-function pointers.
-     */
-    if (ctx->Nb == 8)
-    ctx->decrypt = aes_decrypt_nb_8;
-    else if (ctx->Nb == 6)
-    ctx->decrypt = aes_decrypt_nb_6;
-    else if (ctx->Nb == 4)
-    ctx->decrypt = aes_decrypt_nb_4;
 
     /*
      * Now do the key setup itself.
