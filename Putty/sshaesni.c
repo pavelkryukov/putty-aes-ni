@@ -18,19 +18,19 @@
 
 #include "ssh.h"
 
-#define MAX_NR 14               /* max no of rounds */
-#define MAX_NK 8               /* max no of words in input key */
-#define MAX_NB 8               /* max no of words in cipher blk */
+#define MAX_NR 14   /* max no of rounds */
+#define MAX_NK 8    /* max no of words in input key */
+#define NB 4        /* max no of words in cipher blk */
 
 #define mulby2(x) ( ((x&0x7F) << 1) ^ (x & 0x80 ? 0x1B : 0) )
 
 typedef struct AESContext AESContext;
 
 struct AESContext {
-    word32 keysched[(MAX_NR + 1) * MAX_NB];
-    word32 invkeysched[(MAX_NR + 1) * MAX_NB];
-    word32 iv[MAX_NB];
-    int Nb, Nr;
+    word32 keysched[(MAX_NR + 1) * NB];
+    word32 invkeysched[(MAX_NR + 1) * NB];
+    word32 iv[NB];
+    int Nr;
 };
 
 static const unsigned char Sbox[256] = {
@@ -348,26 +348,23 @@ static void aes_wrap_bytes(unsigned char *blk)
  * bytes; each can be either 16 (128-bit), 24 (192-bit), or 32
  * (256-bit).
  */
-static void aes_setup(AESContext * ctx, int blocklen,
-           unsigned char *key, int keylen)
+static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 {
     int i, j, Nk, rconst;
 
-    assert(blocklen == 16 || blocklen == 24 || blocklen == 32);
     assert(keylen == 16 || keylen == 24 || keylen == 32);
 
     /*
      * Basic parameters. Words per block, words in key, rounds.
      */
     Nk = keylen / 4;
-    ctx->Nb = blocklen / 4;
-    ctx->Nr = 6 + (ctx->Nb > Nk ? ctx->Nb : Nk);
+    ctx->Nr = 6 + (NB > Nk ? NB : Nk);
 
     /*
      * Now do the key setup itself.
      */
     rconst = 1;
-    for (i = 0; i < (ctx->Nr + 1) * ctx->Nb; i++) {
+    for (i = 0; i < (ctx->Nr + 1) * NB; i++) {
     if (i < Nk)
         ctx->keysched[i] = GET_32BIT_MSB_FIRST(key + 4 * i);
     else {
@@ -402,9 +399,9 @@ static void aes_setup(AESContext * ctx, int blocklen,
      * Now prepare the modified keys for the inverse cipher.
      */
     for (i = 0; i <= ctx->Nr; i++) {
-    for (j = 0; j < ctx->Nb; j++) {
+    for (j = 0; j < NB; j++) {
         word32 temp;
-        temp = ctx->keysched[(ctx->Nr - i) * ctx->Nb + j];
+        temp = ctx->keysched[(ctx->Nr - i) * NB + j];
         if (i != 0 && i != ctx->Nr) {
         /*
          * Perform the InvMixColumn operation on i. The D
@@ -422,11 +419,11 @@ static void aes_setup(AESContext * ctx, int blocklen,
         temp ^= D2[Sbox[c]];
         temp ^= D3[Sbox[d]];
         }
-        ctx->invkeysched[i * ctx->Nb + j] = temp;
+        ctx->invkeysched[i * NB + j] = temp;
     }
     }
 
-    for (i = 0; i < (MAX_NR + 1) * MAX_NB; ++i) {
+    for (i = 0; i < (MAX_NR + 1) * NB; ++i) {
         aes_wrap_bytes((unsigned char*)(&ctx->keysched[i]));
         aes_wrap_bytes((unsigned char*)(&ctx->invkeysched[i]));
     }
@@ -619,19 +616,19 @@ void aes_free_context(void *handle)
 void aes128_key(void *handle, unsigned char *key)
 {
     AESContext *ctx = (AESContext *)handle;
-    aes_setup(ctx, 16, key, 16);
+    aes_setup(ctx, key, 16);
 }
 
 void aes192_key(void *handle, unsigned char *key)
 {
     AESContext *ctx = (AESContext *)handle;
-    aes_setup(ctx, 16, key, 24);
+    aes_setup(ctx, key, 24);
 }
 
 void aes256_key(void *handle, unsigned char *key)
 {
     AESContext *ctx = (AESContext *)handle;
-    aes_setup(ctx, 16, key, 32);
+    aes_setup(ctx, key, 32);
 }
 
 void aes_iv(void *handle, unsigned char *iv)
@@ -663,7 +660,7 @@ void aes_ssh2_sdctr(void *handle, unsigned char *blk, int len)
 void aes256_encrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
 {
     AESContext ctx;
-    aes_setup(&ctx, 16, key, 32);
+    aes_setup(&ctx, key, 32);
     memset(ctx.iv, 0, sizeof(ctx.iv));
     aes_encrypt_cbc(blk, len, &ctx);
     smemclr(&ctx, sizeof(ctx));
@@ -672,7 +669,7 @@ void aes256_encrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
 void aes256_decrypt_pubkey(unsigned char *key, unsigned char *blk, int len)
 {
     AESContext ctx;
-    aes_setup(&ctx, 16, key, 32);
+    aes_setup(&ctx, key, 32);
     memset(ctx.iv, 0, sizeof(ctx.iv));
     aes_decrypt_cbc(blk, len, &ctx);
     smemclr(&ctx, sizeof(ctx));
