@@ -15,32 +15,26 @@
 #include <limits.h>
 #include <string.h>
 
-void * aligned_malloc(size_t size, int align) {
-	void *ptr, *mem;
-	if (align < 0) {
-		return NULL;
-	}
+void * aligned_malloc(size_t size, int align)
+{
+    void *ptr, *mem;
+    if (align < 0) {
+        return NULL;
+    }
 
     mem = malloc(size + align - 1 + sizeof(void*));
-	
-	if (mem != NULL) {
-		ptr = (void*) (((unsigned int)mem + sizeof(void*) + align -1) & ~(align-1));
-		*((void**)((unsigned int)ptr - sizeof(void*))) = mem;
-		/* Return the address of aligned memory */
-		return ptr; 
-	}
-	return NULL;
+
+    if (mem != NULL) {
+        ptr = (void*) (((size_t)mem + sizeof(void*) + align - 1) & ~(align - 1));
+        *((void**)((size_t)ptr - sizeof(void*))) = mem; /* Store original ptr */
+        return ptr; 
+    }
+    return NULL;
 }
 
-void aligned_free(void *p) {
-	/* Get the address of the memory, stored at the
-	 * start of our total memory area. Alternatively,
-	 * you can use void *ptr = *((void **)p-1) instead 
-	 * of the one below.
-	 */
-	void *ptr = *((void**)((unsigned int)p - sizeof(void*)));
-	free(ptr);
-	return;
+void aligned_free(void *p)
+{
+    free(*((void**)((size_t)p - sizeof(void*))));
 }
 
 void *safemalloc(size_t n, size_t size)
