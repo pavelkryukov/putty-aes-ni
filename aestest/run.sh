@@ -19,7 +19,7 @@ CPUID_AES="cpuid"
 if [ "$1" = "-p" ];
 then
     echo "Perfomance mode enabled"
-    SEEDS="10"
+    SEEDS="5"
 else
     SEEDS="1000"
 fi
@@ -61,8 +61,8 @@ else
             exit
         else
             echo "found `sde -version | grep 'Ver' | sed 's/\(.*\)Version\:\( *\)\(.*\)/\3/g'`"
-            RUNAESNI_TEST="sde -- "$RUNAESNI_TEST
-            RUNAESNI_PERF="sde -- "$RUNAESNI_PERF
+            RUNAESNI_TEST="sde -no-avx -- "$RUNAESNI_TEST
+            RUNAESNI_PERF="sde -no-avx -- "$RUNAESNI_PERF
         fi
 fi
 
@@ -96,7 +96,7 @@ fi
 
 #####
 
-if [ ! "$1" = "-p"];
+if [ ! "$1" = "-p" ];
 then
     exit
 fi
