@@ -13,6 +13,22 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef __GNUC__
+static unsigned long long __rdtsc()
+{
+    unsigned hi, lo;
+    __asm__ __volatile__
+    (
+        "rdtsc"
+        : "=a"(lo)
+        , "=d"(hi)
+    );
+    return ((unsigned long long)lo) | (((unsigned long long)hi)<<32);
+}
+#else
+#include <intrin.h>
+#endif
+
 #include "ssh.h"
 
 typedef enum
@@ -36,7 +52,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
     unsigned char *key = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
     unsigned char *blk = (unsigned char*)malloc(sizeof(unsigned char) * blocklen);
     unsigned char *iv  = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
-    clock_t now;
+    unsigned long long now;
 
     unsigned i;
 
@@ -66,7 +82,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
     
     aes_iv(handle, key);
 
-    now = clock();
+    now = __rdtsc();
     switch (testtype)
     {
     case ENCRYPT:
@@ -80,7 +96,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
         break;
     }
     
-    now = clock() - now;
+    now = __rdtsc() - now;
     fprintf(file, "%d\t%d\t%d\t%d\n", testtype, keytype, blocklen, now);
 
     aes_free_context(handle);
@@ -96,7 +112,7 @@ int main()
     size_t keytypes_s = DIM(keytypes);
     int b, k;
     
-    for (b = (1 << 20); b < (1 << 30); b += ((b >> 1) & ~0xf))
+    for (b = 16; b < (1 << 20); b <<= 1)
         for (k = 0; k < keytypes_s; ++k) {
             test(keytypes[k], ENCRYPT, 4134, b, fp);
             test(keytypes[k], DECRYPT, 2343, b, fp);
