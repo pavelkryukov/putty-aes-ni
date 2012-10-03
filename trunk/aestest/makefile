@@ -7,7 +7,7 @@
 # http://putty-aes-ni.googlecode.com/
 
 CC=gcc
-CFLAGS=-Wall -Werror -maes -msse4 -std=c89 -pedantic -I ../Putty
+CFLAGS=-Wall -Werror -maes -msse4 -std=c89 -pedantic -Wno-long-long -I ../Putty
 OPT=-O3
 NOOPT=-O0
 
