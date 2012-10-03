@@ -27,7 +27,6 @@
 typedef struct AESContext AESContext;
 
 struct AESContext {
-    word32 a[2]; /* for aligment */
     word32 keysched[(MAX_NR + 1) * MAX_NB];
     word32 invkeysched[(MAX_NR + 1) * MAX_NB];
     word32 iv[MAX_NB];
