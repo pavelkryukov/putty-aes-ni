@@ -1,10 +1,13 @@
 /**
  * sshaesni.c
  *
- * Implementation of AES / Rijndael for PuTTY
- * Base on sshaes.c source file of PuTTY
+ * Implementation of AES for PuTTY using AES-NI
+ * instuction set expansion.
  *
- * @author Putty AES NI team.
+ * @author Pavel Kryukov <kryukov@frtk.ru>
+ * @author Maxim Kuznetsov <maks.kuznetsov@gmail.com>
+ * @author Svyatoslav Kuzmich <svyatoslav1@gmail.com>
+ * Based on sshaes.c source file of PuTTY
  *
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
@@ -433,15 +436,13 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
     __m128i enc;
     __m128i* block = (__m128i*)blk;
-    int i;
+    const __m128i* finish = (__m128i*)(blk + len);
 
     assert((len & 15) == 0);
 
-    len /= 16;
-
     /* Load IV */
     enc = _mm_loadu_si128((__m128i*)(ctx->iv));
-    for (i = 0; i < len; ++i)
+    while (block < finish)
     {
         /* Key schedule ptr   */
         __m128i* keysched = (__m128i*)(ctx->keysched);
@@ -486,22 +487,20 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 
 static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
-    __m128i dec, last_in, feedback;
+    __m128i dec, last, iv;
     __m128i* block = (__m128i*)blk;
-    int i;
+    const __m128i* finish = (__m128i*)(blk + len);
 
     assert((len & 15) == 0);
 
-    len /= 16;
-
     /* Load IV */
-    feedback = _mm_loadu_si128((__m128i*)(ctx->iv));
-    for (i = 0; i < len; ++i)
+    iv = _mm_loadu_si128((__m128i*)(ctx->iv));
+    while (block < finish)
     {
         /* Key schedule ptr   */
         __m128i* keysched = (__m128i*)(ctx->invkeysched);
-        last_in = _mm_loadu_si128(block);
-        dec  = _mm_xor_si128(last_in, *(keysched++));
+        last = _mm_loadu_si128(block);
+        dec  = _mm_xor_si128(last, *(keysched++));
         switch (ctx->Nr)
         {
         case 14:
@@ -527,11 +526,14 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
         }
 
         /* Xor data with IV */
-        dec  = _mm_xor_si128(feedback, dec);
-        /* Store and go to next block */
+        dec  = _mm_xor_si128(iv, dec);
+
+        /* Store data */
         _mm_storeu_si128(block, dec);
+        iv = last;
+        
+        /* Go to next block */
         ++block;
-        feedback = last_in;
     }
 
     /* Update IV */
@@ -544,16 +546,14 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
     const __m128i ONE  = _mm_setr_epi32(0,0,0,1);
     const __m128i ZERO = _mm_setzero_si128();
     __m128i iv;
-
     __m128i* block = (__m128i*)blk;
-    int i;
+    const __m128i* finish = (__m128i*)(blk + len);
 
     assert((len & 15) == 0);
-    len /= 16;
 
     iv = _mm_loadu_si128((__m128i*)ctx->iv);
 
-    for (i = 0; i < len; ++i)
+    while (block < finish)
     {
         __m128i enc;
         __m128i* keysched = (__m128i*)(ctx->keysched);/* Key schedule ptr   */
@@ -595,7 +595,8 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
         enc = _mm_unpacklo_epi64(ZERO, enc);     /* Pack carry reg     */
         iv  = _mm_sub_epi64(iv, enc);            /* Sub carry reg      */
         iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64); /* Swap enianess back */
-
+        
+        /* Go to next block */
         ++block;
     }
 
