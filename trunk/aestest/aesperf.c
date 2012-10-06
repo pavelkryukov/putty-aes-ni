@@ -52,7 +52,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
     unsigned char *key = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
     unsigned char *blk = (unsigned char*)malloc(sizeof(unsigned char) * blocklen);
     unsigned char *iv  = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
-    unsigned long long now;
+    volatile unsigned long long now;
 
     unsigned i;
 
@@ -111,7 +111,7 @@ int main()
     KeyType keytypes[] = {AES128, AES192, AES256};
     size_t keytypes_s = DIM(keytypes);
     int b, k;
-    
+
     for (b = 16; b < (1 << 20); b <<= 1)
         for (k = 0; k < keytypes_s; ++k) {
             test(keytypes[k], ENCRYPT, 4134, b, fp);
@@ -119,8 +119,8 @@ int main()
             test(keytypes[k], SDCTR, 4321, b, fp);
             fflush(fp);
         }
-    
+
     fclose(fp);
-    
+
     return 0;
 }
