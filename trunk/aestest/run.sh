@@ -21,7 +21,7 @@ then
     echo "Perfomance mode enabled"
     SEEDS="5"
 else
-    SEEDS="50"
+    SEEDS="1000"
 fi
 
 # Command for running SSHAESNI test
