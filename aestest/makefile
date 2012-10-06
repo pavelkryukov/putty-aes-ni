@@ -22,7 +22,7 @@ all: $(TARGETS)
 	$(CC) $(OPT) $(CFLAGS) $^ -o $@
 
 %.o: %.c
-	$(CC) $(OPT) $(CFLAGS) $^ -c -o $@
+	$(CC) $(CFLAGS) $^ -c -o $@
 
 cpuid: cpuid.c
 	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -DSILENT
