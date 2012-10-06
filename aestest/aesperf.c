@@ -110,15 +110,16 @@ int main()
     FILE *fp = fopen("perf-output.txt", "w");
     KeyType keytypes[] = {AES128, AES192, AES256};
     size_t keytypes_s = DIM(keytypes);
-    int b, k;
+    int b, k, i;
 
     for (b = 16; b < (1 << 25); b <<= 1)
-        for (k = 0; k < keytypes_s; ++k) {
-            test(keytypes[k], ENCRYPT, 4134, b, fp);
-            test(keytypes[k], DECRYPT, 2343, b, fp);
-            test(keytypes[k], SDCTR, 4321, b, fp);
-            fflush(fp);
-        }
+        for (i = 0; i < 1000; ++i)
+            for (k = 0; k < keytypes_s; ++k) {
+                test(keytypes[k], ENCRYPT, 4134, b, fp);
+                test(keytypes[k], DECRYPT, 2343, b, fp);
+                test(keytypes[k], SDCTR, 4321, b, fp);
+                fflush(fp);
+            }
 
     fclose(fp);
 
