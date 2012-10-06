@@ -6,7 +6,7 @@
  *
  * @author Pavel Kryukov <kryukov@frtk.ru>
  * @author Maxim Kuznetsov <maks.kuznetsov@gmail.com>
- * @author Svyatoslav Kuzmich <svyatoslav1@gmail.com>
+ * @author Svyatoslav Kuzmich <svatoslav1@gmail.com>
  * Based on sshaes.c source file of PuTTY
  *
  * For Putty AES NI project
@@ -23,7 +23,7 @@
 
 #define MAX_NR 14   /* max no of rounds */
 #define MAX_NK 8    /* max no of words in input key */
-#define NB 4        /* max no of words in cipher blk */
+#define NB 4        /* no of words in cipher blk */
 
 #define mulby2(x) ( ((x&0x7F) << 1) ^ (x & 0x80 ? 0x1B : 0) )
 
@@ -635,9 +635,7 @@ void aes256_key(void *handle, unsigned char *key)
 void aes_iv(void *handle, unsigned char *iv)
 {
     AESContext *ctx = (AESContext *)handle;
-    int i;
-    for (i = 0; i < 4; i++)
-    ctx->iv[i] = GET_32BIT_LSB_FIRST(iv + 4 * i);
+    memcpy(ctx->iv, iv, sizeof(ctx->iv));
 }
 
 void aes_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len)
