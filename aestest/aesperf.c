@@ -113,7 +113,7 @@ int main()
     int b, k, i;
 
     for (b = 16; b < (1 << 25); b <<= 1)
-        for (i = 0; i < 1000; ++i)
+        for (i = 0; i < 50; ++i)
             for (k = 0; k < keytypes_s; ++k) {
                 test(keytypes[k], ENCRYPT, 4134, b, fp);
                 test(keytypes[k], DECRYPT, 2343, b, fp);
