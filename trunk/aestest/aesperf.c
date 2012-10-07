@@ -105,13 +105,19 @@ int main()
         ptr[i] = rand();
 
     for (b = 16; b <= MAXBLK; b <<= 1)
+    {
+	printf("\n Block size %15i : ",b);
         for (i = 0; i < 30; ++i)
+	{
             for (k = 0; k < keytypes_s; ++k) {
                 test(keytypes[k], ENCRYPT, b, fp, ptr);
                 test(keytypes[k], DECRYPT, b, fp, ptr);
          /*     test(keytypes[k], SDCTR, 4321, b, fp);*/
                 fflush(fp);
             }
+	    printf("-");
+	}
+    }
 
     free(ptr);
     fclose(fp);
