@@ -4,7 +4,7 @@
  * Measuring time of AES cryptoalgorithm
  *
  * @author kryukov@frtk.ru
- * @version 1.0
+ * @version 2.0
  *
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
@@ -49,9 +49,9 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
 {
     void *handle = aes_make_context();
     const size_t keylen = (size_t)keytype;
-	unsigned char* const key = ptr + blocklen;
-	unsigned char* const blk = ptr;
-	unsigned char* const iv = ptr + keylen + blocklen;
+    unsigned char* const key = ptr + blocklen;
+    unsigned char* const blk = ptr;
+    unsigned char* const iv = ptr + keylen + blocklen;
     volatile unsigned long long now;
 
     switch (keytype)
@@ -90,7 +90,7 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
 }
 
 #define DIM(A) (sizeof(A) / sizeof(A[0]))
-#define MAXBLK (1 << 25)
+#define MAXBLK (1 << 28)
 #define MEM (MAXBLK + 2 * 256)
 
 int main()
@@ -99,8 +99,7 @@ int main()
     KeyType keytypes[] = {AES128, AES192, AES256};
     size_t keytypes_s = DIM(keytypes);
     int b, k, i;
-	
-	unsigned char* ptr = (unsigned char*)malloc(sizeof(unsigned char) * MEM);
+    unsigned char* ptr = (unsigned char*)malloc(sizeof(unsigned char) * MEM);
 
     for (i = 0; i < MEM; ++i)
         ptr[i] = rand();
@@ -114,7 +113,7 @@ int main()
                 fflush(fp);
             }
 
-	free(ptr);
+    free(ptr);
     fclose(fp);
 
     return 0;
