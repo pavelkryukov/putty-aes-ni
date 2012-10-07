@@ -14,4 +14,9 @@
 
   # Format of output files is following: ||code||keylen||blocklen||time||
   # Codes: ||0 - encryption||1 - decryption||2 - sdctr||
-  # By default, optimization of both AES algorithms is disabled, to turn it on, change $(NOOPT) to $(OPT) in Makefile.
+  # By default, optimization of both AES algorithms is enabled, to turn it of, change $(OPT) to $(NOOPT) in Makefile.
+
+== Defaults ==
+  # Every experiment is made 30 times
+  # Range of memory is from 16 bytes to 256 Mbytes
+  # SDCTR tests are disabled
