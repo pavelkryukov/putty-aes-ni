@@ -16,7 +16,7 @@ TARGETS=sshaes-test sshaesni-test sshaes-perf sshaesni-perf
 all: $(TARGETS)
 
 %-perf: ../Putty/%.c aesperf.o puttymem.o
-	$(CC) $(NOOPT) $(CFLAGS) $^ -o $@
+	$(CC) $(OPT) $(CFLAGS) $^ -o $@
 
 %-test: ../Putty/%.c aestest.o puttymem.o
 	$(CC) $(OPT) $(CFLAGS) $^ -o $@

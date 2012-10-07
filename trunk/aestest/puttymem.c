@@ -17,7 +17,7 @@
 
 void * aligned_malloc(size_t size, int align)
 {
-    void *ptr, *mem;
+    void* mem;
     if (align < 0) {
         return NULL;
     }
@@ -25,7 +25,7 @@ void * aligned_malloc(size_t size, int align)
     mem = malloc(size + align - 1 + sizeof(void*));
 
     if (mem != NULL) {
-        ptr = (void*) (((size_t)mem + sizeof(void*) + align - 1) & ~(align - 1));
+        void* ptr = (void*)(((size_t)mem + sizeof(void*) + align - 1) & ~(align - 1));
         *((void**)((size_t)ptr - sizeof(void*))) = mem; /* Store original ptr */
         return ptr; 
     }

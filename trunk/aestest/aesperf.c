@@ -45,27 +45,14 @@ typedef enum
     SDCTR
 } TestType;
 
-static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned blocklen, FILE *file)
+static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *file, unsigned char* ptr)
 {
     void *handle = aes_make_context();
     const size_t keylen = (size_t)keytype;
-    unsigned char *key = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
-    unsigned char *blk = (unsigned char*)malloc(sizeof(unsigned char) * blocklen);
-    unsigned char *iv  = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
+	unsigned char* const key = ptr + blocklen;
+	unsigned char* const blk = ptr;
+	unsigned char* const iv = ptr + keylen + blocklen;
     volatile unsigned long long now;
-
-    unsigned i;
-
-    srand(seed);
-
-    for (i = 0; i < blocklen; ++i)
-        blk[i] = rand();
-
-    for (i = 0; i < keylen; ++i)
-        key[i] = rand();
-
-    for (i = 0; i < keylen; ++i)
-        iv[i] = rand();
 
     switch (keytype)
     {
@@ -79,8 +66,8 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
         aes256_key(handle, key);
         break;
     }
-    
-    aes_iv(handle, key);
+
+    aes_iv(handle, iv);
 
     now = __rdtsc();
     switch (testtype)
@@ -95,15 +82,16 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
         aes_ssh2_sdctr(handle, blk, blocklen);
         break;
     }
-    
+
     now = __rdtsc() - now;
     fprintf(file, "%d\t%d\t%d\t%llu\n", testtype, keytype, blocklen, now);
 
     aes_free_context(handle);
-    free(key), free(blk), free(iv);
 }
 
 #define DIM(A) (sizeof(A) / sizeof(A[0]))
+#define MAXBLK (1 << 25)
+#define MEM (MAXBLK + 2 * 256)
 
 int main()
 {
@@ -111,16 +99,22 @@ int main()
     KeyType keytypes[] = {AES128, AES192, AES256};
     size_t keytypes_s = DIM(keytypes);
     int b, k, i;
+	
+	unsigned char* ptr = (unsigned char*)malloc(sizeof(unsigned char) * MEM);
 
-    for (b = 16; b < (1 << 25); b <<= 1)
-        for (i = 0; i < 50; ++i)
+    for (i = 0; i < MEM; ++i)
+        ptr[i] = rand();
+
+    for (b = 16; b <= MAXBLK; b <<= 1)
+        for (i = 0; i < 30; ++i)
             for (k = 0; k < keytypes_s; ++k) {
-                test(keytypes[k], ENCRYPT, 4134, b, fp);
-                test(keytypes[k], DECRYPT, 2343, b, fp);
-                test(keytypes[k], SDCTR, 4321, b, fp);
+                test(keytypes[k], ENCRYPT, b, fp, ptr);
+                test(keytypes[k], DECRYPT, b, fp, ptr);
+         /*     test(keytypes[k], SDCTR, 4321, b, fp);*/
                 fflush(fp);
             }
 
+	free(ptr);
     fclose(fp);
 
     return 0;
