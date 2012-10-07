@@ -4,14 +4,15 @@
 # Generator of PuTTY makefiles with AES-NI
 #
 # @author kryukov@frtk.ru
-# @version 1.0
+# @version 2.0
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
 
-cp ./Putty/Recipe ./Putty/Recipe-backup
-perl -p -i -e 's/sshaes/sshaesni/g' ./Putty/Recipe
 cd ./Putty/
+perl -p -i -e 's/sshaes/sshaesni/g' ./Recipe
+perl -p -i -e 's/-Wall/-Wall -maes -msse4/g' ./mkfiles.pl
 perl ./mkfiles.pl
-mv ./Recipe-backup ./Recipe
+perl -p -i -e 's/sshaesni/sshaes/g' ./Recipe
+perl -p -i -e 's/-Wall -maes -msse4/-Wall/g' ./mkfiles.pl
 cd ..
