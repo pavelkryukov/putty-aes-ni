@@ -9,7 +9,7 @@
 CC=gcc
 CFLAGS=-Wall -Werror -maes -msse4 -std=c89 -pedantic -Wno-long-long -I ../Putty
 OPT=-O3
-NOOPT=-O3
+NOOPT=-O0
 
 TARGETS=sshaes-test sshaesni-test sshaes-perf sshaesni-perf
 
