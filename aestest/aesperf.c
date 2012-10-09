@@ -79,7 +79,6 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
         aes_ssh2_decrypt_blk(handle, blk, blocklen);
         break;
     case SDCTR:
-        aes_ssh2_sdctr(handle, blk, blocklen);
         break;
     }
 
@@ -106,17 +105,18 @@ int main()
 
     for (b = 16; b <= MAXBLK; b <<= 1)
     {
-	printf("\n Block size %15i : ",b);
+        printf("\n Block size %15i : ",b);
+        fflush(stdout);
         for (i = 0; i < 30; ++i)
-	{
+        {
             for (k = 0; k < keytypes_s; ++k) {
                 test(keytypes[k], ENCRYPT, b, fp, ptr);
                 test(keytypes[k], DECRYPT, b, fp, ptr);
-         /*     test(keytypes[k], SDCTR, 4321, b, fp);*/
                 fflush(fp);
             }
-	    printf("-");
-	}
+            printf("-");
+            fflush(stdout);
+        }
     }
 
     free(ptr);
