@@ -357,11 +357,8 @@ static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 
     assert(keylen == 16 || keylen == 24 || keylen == 32);
 
-    /*
-     * Basic parameters. Words per block, words in key, rounds.
-     */
-    Nk = keylen / 4;
-    ctx->Nr = 6 + (NB > Nk ? NB : Nk);
+    Nk = keylen / 4;  /* Words in key     */
+    ctx->Nr = 6 + Nk; /* Number of rounds */
 
     /*
      * Now do the key setup itself.
@@ -531,7 +528,7 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
         /* Store data */
         _mm_storeu_si128(block, dec);
         iv = last;
-        
+
         /* Go to next block */
         ++block;
     }
@@ -595,7 +592,7 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
         enc = _mm_unpacklo_epi64(ZERO, enc);     /* Pack carry reg     */
         iv  = _mm_sub_epi64(iv, enc);            /* Sub carry reg      */
         iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64); /* Swap enianess back */
-        
+
         /* Go to next block */
         ++block;
     }
@@ -650,7 +647,7 @@ void aes_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len)
     aes_decrypt_cbc(blk, len, ctx);
 }
 
-void aes_ssh2_sdctr(void *handle, unsigned char *blk, int len)
+static void aes_ssh2_sdctr(void *handle, unsigned char *blk, int len)
 {
     AESContext *ctx = (AESContext *)handle;
     aes_sdctr(blk, len, ctx);
