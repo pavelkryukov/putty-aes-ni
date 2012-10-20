@@ -645,7 +645,7 @@ int sk_address_is_local(SockAddr addr)
 
 #ifndef NO_IPV6
     if (family == AF_INET6) {
-    	return IN6_IS_ADDR_LOOPBACK((const struct in6_addr *)step.ai->ai_addr);
+    	return IN6_IS_ADDR_LOOPBACK(&((const struct sockaddr_in6 *)step.ai->ai_addr)->sin6_addr);
     } else
 #endif
     if (family == AF_INET) {
@@ -665,6 +665,11 @@ int sk_address_is_local(SockAddr addr)
 	assert(family == AF_UNSPEC);
 	return 0;		       /* we don't know; assume not */
     }
+}
+
+int sk_address_is_special_local(SockAddr addr)
+{
+    return 0;                /* no Unix-domain socket analogue here */
 }
 
 int sk_addrtype(SockAddr addr)

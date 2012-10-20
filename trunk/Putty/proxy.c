@@ -286,6 +286,15 @@ static int proxy_for_destination (SockAddr addr, char *hostname, int port,
     const char *exclude_list;
 
     /*
+     * Special local connections such as Unix-domain sockets
+     * unconditionally cannot be proxied, even in proxy-localhost
+     * mode. There just isn't any way to ask any known proxy type for
+     * them.
+     */
+    if (addr && sk_address_is_special_local(addr))
+        return 0;                      /* do not proxy */
+
+    /*
      * Check the host name and IP against the hard-coded
      * representations of `localhost'.
      */
@@ -741,8 +750,7 @@ int proxy_socks4_negotiate (Proxy_Socket p, int change)
 
 	type = sk_addrtype(p->remote_addr);
 	if (type == ADDRTYPE_IPV6) {
-	    plug_closing(p->plug, "Proxy error: SOCKS version 4 does"
-			 " not support IPv6", PROXY_ERROR_GENERAL, 0);
+            p->error = "Proxy error: SOCKS version 4 does not support IPv6";
 	    return 1;
 	} else if (type == ADDRTYPE_IPV4) {
 	    namelen = 0;
