@@ -112,3 +112,9 @@ else
 fi
 echo "Generating aes-ni perf data..."
 $RUNAESNI_PERF
+
+echo "Sorting..."
+sort perf-original.txt > perf-original.sorted
+sort perf-output.txt > perf-output.sorted
+mv perf-original.sorted perf-original.txt
+mv perf-output.sorted perf-output.txt
