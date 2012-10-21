@@ -26,7 +26,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ssh.h"
+#include "coverage.h"
 #include "defines.h"
 
 static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned blocklen, FILE *file)
