@@ -12,9 +12,9 @@
 
 typedef enum
 {
-    AES128 = 128,
-    AES192 = 192,
-    AES256 = 256
+    AES128 = 16,
+    AES192 = 24,
+    AES256 = 32
 } KeyType;
 
 typedef enum
