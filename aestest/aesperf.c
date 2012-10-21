@@ -4,7 +4,7 @@
  * Measuring time of AES cryptoalgorithm
  *
  * @author kryukov@frtk.ru
- * @version 2.0
+ * @version 2.1
  *
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
@@ -12,6 +12,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+
+#include "ssh.h"
+#include "defines.h"
 
 #ifdef __GNUC__
 static unsigned long long __rdtsc()
@@ -28,22 +31,6 @@ static unsigned long long __rdtsc()
 #else
 #include <intrin.h>
 #endif
-
-#include "ssh.h"
-
-typedef enum
-{
-    AES128 = 128,
-    AES192 = 192,
-    AES256 = 256
-} KeyType;
-
-typedef enum
-{
-    ENCRYPT,
-    DECRYPT,
-    SDCTR
-} TestType;
 
 static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *file, unsigned char* ptr)
 {
@@ -88,7 +75,6 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
     aes_free_context(handle);
 }
 
-#define DIM(A) (sizeof(A) / sizeof(A[0]))
 #define MAXBLK (1 << 28)
 #define MEM (MAXBLK + 2 * 256)
 
