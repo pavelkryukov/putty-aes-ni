@@ -10,6 +10,7 @@ CC=gcc
 CFLAGS=-O3 -Wall -Werror -maes -msse4 -std=c89 -pedantic -Wno-long-long
 LDFLAGS=
 TARGETS=perf demo demo-decode test
+PUTTY=../Putty
 
 sshaes-%: sshaes.o aes%.o puttymem.o
 	$(CC) $(LDFLAGS) $^ -o $@
@@ -17,8 +18,8 @@ sshaes-%: sshaes.o aes%.o puttymem.o
 sshaesni-%: sshaesni.o aes%.o puttymem.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
-sshae%.o: ../Putty/sshae%.c
-	$(CC) $(CFLAGS) $^ -c -o $@ -I ../Putty
+sshae%.o: $(PUTTY)/sshae%.c
+	$(CC) $(CFLAGS) $^ -c -o $@ -I $(PUTTY)
     
 aesdemo-decode.o: aesdemo.c
 	$(CC) $(CFLAGS) $^ -c -o $@ -DDECODE
