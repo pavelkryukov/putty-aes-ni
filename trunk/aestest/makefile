@@ -1,7 +1,7 @@
 # Makefile for unit tests
 #
 # @author kryukov@frtk.ru
-# @version 2.0
+# @version 3.0
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
@@ -15,17 +15,17 @@ TARGETS=sshaes-test sshaesni-test sshaes-perf sshaesni-perf
 
 all: $(TARGETS)
 
-%-perf: ../Putty/%.c aesperf.o puttymem.o
-	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -I ../Putty
-    
-%-demo-encode: ../Putty/%.c aesdemo.o puttymem.o
-	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -I ../Putty
-    
-%-demo-decode: ../Putty/%.c aesdemo.o puttymem.o -DDECODE
-	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -I ../Putty
+sshaes-%: sshaes.o aes%.o puttymem.o
+	$(CC) $^ -o $@
 
-%-test: ../Putty/%.c aestest.o puttymem.o
-	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -I ../Putty
+sshaesni-%: sshaesni.o aes%.o puttymem.o
+	$(CC) $^ -o $@
+
+sshae%.o: ../Putty/sshae%.c
+	$(CC) $(OPT) $(CFLAGS) $^ -c -o $@ -I ../Putty
+    
+aesdemo-decode.o: aesdemo.c
+	$(CC) $(OPT) $(CFLAGS) $^ -c -o $@ -DDECODE
 
 %.o: %.c
 	$(CC) $(OPT) $(CFLAGS) $^ -c -o $@
