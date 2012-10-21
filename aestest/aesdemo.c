@@ -4,7 +4,7 @@
  * Demonstration of AES cryptoalgorithm
  *
  * @author kryukov@frtk.ru
- * @version 1.5
+ * @version 2.0
  *
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
@@ -16,86 +16,92 @@
 
 #include "coverage.h"
 
-size_t readfile(char* filename, unsigned char** ptr)
-{
-    int size = 0;
-    FILE *f = fopen(filename, "rb");
-    if (f == NULL) 
-    { 
-        *ptr = NULL;
-        return -1;
-    } 
-    fseek(f, 0, SEEK_END);
-    size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    *ptr = (unsigned char *)malloc(size+1);
-    if (size != fread(*ptr, sizeof(unsigned char), size, f)) 
-    { 
-        free(*ptr);
-        return -2;
-    } 
-    fclose(f);
-    (*ptr)[size] = 0;
-    return size;
-}
+#define BUF_LEN 4096
 
-void writefile(char* filename, unsigned char* ptr, size_t size)
-{
-    FILE *f = fopen(filename, "w");
-    fwrite(ptr, sizeof(unsigned char), size, f);
-    fclose(f);
-}
-
-void encode(unsigned char* block, size_t blocklen)
+void encode(unsigned char* block)
 {
     unsigned char key[32] = "imtheoperatorwithmypocketcalcula";
     unsigned char iv[16] = "initializationve";
     void *handle = aes_make_context();
-    blocklen &= ~15ull;
     aes256_key(handle, key);
     aes_iv(handle, iv);
-    aes_ssh2_encrypt_blk(handle, block, blocklen);
+    aes_ssh2_encrypt_blk(handle, block, BUF_LEN);
     aes_free_context(handle);
 }
 
-void decode(unsigned char* block, size_t blocklen)
+void decode(unsigned char* block)
 {
     unsigned char key[32] = "imtheoperatorwithmypocketcalcula";
     unsigned char iv[16] = "initializationve";
     void *handle = aes_make_context();
-    blocklen &= ~15ull;
     aes256_key(handle, key);
     aes_iv(handle, iv);
-    aes_ssh2_decrypt_blk(handle, block, blocklen);
+    aes_ssh2_decrypt_blk(handle, block, BUF_LEN);
     aes_free_context(handle);
+}
+
+int ciphCopy(char* src, char* dst)
+{
+    int result = 0;
+    FILE* f_dst;
+    FILE* f_src;
+    unsigned char* buf;
+
+    /* Source file processing */
+    f_src = fopen(src, "rb");
+    if (f_src == NULL)
+    {
+        fprintf(stderr, "Failed to open '%s'\n", src);
+        return 1;
+    }
+
+    /* Destination file processing */
+    f_dst = fopen(dst, "wb");
+    if (f_dst == NULL)
+    {
+        fprintf(stderr, "Failed to create '%s'\n", dst);
+        fclose(f_src);
+        return 1;
+    }
+
+    buf = (unsigned char*)malloc(BUF_LEN); /* Read buffer */
+    while (result = fread(buf, sizeof(char), BUF_LEN, f_src), result > 0)
+    {
+        if (result == -1)
+        {
+            fprintf(stderr, "Failed to read from '%s'\n", src);
+            fclose(f_src);
+            fclose(f_dst);
+            return 1;
+        }
+#ifdef DECODE
+        decode(buf);
+#else
+        encode(buf);
+#endif
+        result = fwrite(buf, sizeof(char), BUF_LEN, f_dst);
+        if (result == -1)
+        {
+            fprintf(stderr,"Failed to write to '%s'\n", dst);
+            fclose(f_src);
+            fclose(f_dst);
+            return 1;
+        }
+    }
+    free(buf);
+
+    fclose(f_src);
+    fclose(f_dst);
+    return 0;
 }
 
 int main(int argc, char** argv)
 {
-    int size = 0;
-    unsigned char* block;
     if (argc != 3)
     {
         fprintf(stderr,
             "Syntax error! First parameter is source file, second is dest file\n");
         return 1;
     }
-    size = readfile(argv[1], &block);
-    if (size == -1)
-    {
-        fprintf(stderr, "%s is not found!\n", argv[1]);
-        return 1;
-    }
-    if (size == -2) {
-        fprintf(stderr, "Error in reading %s\n", argv[1]);
-        return 1;
-    }
-#ifdef DECODE
-    decode(block, size);
-#else
-    encode(block, size);
-#endif
-    writefile(argv[2], block, size);
-    free(block);
-    return 0;
+    return ciphCopy(argv[1], argv[2]);
 }
