@@ -62,7 +62,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
         aes256_key(handle, key);
         break;
     }
-    
+
     aes_iv(handle, key);
 
     switch (testtype)

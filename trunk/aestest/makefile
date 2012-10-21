@@ -17,6 +17,12 @@ all: $(TARGETS)
 
 %-perf: ../Putty/%.c aesperf.o puttymem.o
 	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -I ../Putty
+    
+%-demo-encode: ../Putty/%.c aesdemo.o puttymem.o
+	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -I ../Putty
+    
+%-demo-decode: ../Putty/%.c aesdemo.o puttymem.o -DDECODE
+	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -I ../Putty
 
 %-test: ../Putty/%.c aestest.o puttymem.o
 	$(CC) $(OPT) $(CFLAGS) $^ -o $@ -I ../Putty
