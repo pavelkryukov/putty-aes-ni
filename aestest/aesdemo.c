@@ -57,8 +57,8 @@ int ciphCopy(char* src, char* dst)
         return 1;
     }
 
-    buf = (unsigned char*)malloc(BUF_LEN); /* Read buffer */
-    while (result = fread(buf, sizeof(char), BUF_LEN, f_src), result > 0)
+    buf = (unsigned char*)calloc(BUF_LEN, sizeof(unsigned char)); /* Read buffer */
+    while (result = fread(buf, sizeof(unsigned char), BUF_LEN, f_src), result > 0)
     {
         if (result == -1)
         {
@@ -67,9 +67,8 @@ int ciphCopy(char* src, char* dst)
             fclose(f_dst);
             return 1;
         }
-        result = (result & 0xf) + 1;
         cipher(buf);
-        result = fwrite(buf, sizeof(char), result, f_dst);
+        result = fwrite(buf, sizeof(unsigned char), result, f_dst);
         fflush(f_dst);
         if (result == -1)
         {
