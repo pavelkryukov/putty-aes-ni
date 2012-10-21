@@ -70,7 +70,7 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
     }
 
     now = __rdtsc() - now;
-    fprintf(file, "%d\t%d\t%d\t%llu\n", testtype, keytype, blocklen, now);
+    fprintf(file, "%d\t%d\t%d\t%llu\n", testtype, keytype * 8, blocklen, now);
 
     aes_free_context(handle);
 }
