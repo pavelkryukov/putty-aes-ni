@@ -4,7 +4,7 @@
  * Unit testing for AES cryptoalgorithm
  *
  * @author kryukov@frtk.ru
- * @version 1.4
+ * @version 1.5
  *
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
@@ -27,20 +27,7 @@
 #include <stdlib.h>
 
 #include "ssh.h"
-
-typedef enum
-{
-    AES128 = 128,
-    AES192 = 192,
-    AES256 = 256
-} KeyType;
-
-typedef enum
-{
-    ENCRYPT,
-    DECRYPT,
-    SDCTR
-} TestType;
+#include "defines.h"
 
 static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned blocklen, FILE *file)
 {
@@ -98,8 +85,6 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
     aes_free_context(handle);
     free(key), free(blk), free(iv);
 }
-
-#define DIM(A) (sizeof(A) / sizeof(A[0]))
 
 int main(int args, char** argv)
 {
