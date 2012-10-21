@@ -16,27 +16,20 @@
 
 #include "coverage.h"
 
-#define BUF_LEN 4096
+#define BUF_LEN (1 << 25)
 
-void encode(unsigned char* block)
+void cipher(unsigned char* block)
 {
     unsigned char key[32] = "imtheoperatorwithmypocketcalcula";
     unsigned char iv[16] = "initializationve";
     void *handle = aes_make_context();
     aes256_key(handle, key);
     aes_iv(handle, iv);
-    aes_ssh2_encrypt_blk(handle, block, BUF_LEN);
-    aes_free_context(handle);
-}
-
-void decode(unsigned char* block)
-{
-    unsigned char key[32] = "imtheoperatorwithmypocketcalcula";
-    unsigned char iv[16] = "initializationve";
-    void *handle = aes_make_context();
-    aes256_key(handle, key);
-    aes_iv(handle, iv);
+#ifdef DECODE
     aes_ssh2_decrypt_blk(handle, block, BUF_LEN);
+#else
+    aes_ssh2_decrypt_blk(handle, block, BUF_LEN);
+#endif
     aes_free_context(handle);
 }
 
@@ -74,12 +67,10 @@ int ciphCopy(char* src, char* dst)
             fclose(f_dst);
             return 1;
         }
-#ifdef DECODE
-        decode(buf);
-#else
-        encode(buf);
-#endif
-        result = fwrite(buf, sizeof(char), BUF_LEN, f_dst);
+        result = (result & 0xf) + 1;
+        cipher(buf);
+        result = fwrite(buf, sizeof(char), result, f_dst);
+        fflush(f_dst);
         if (result == -1)
         {
             fprintf(stderr,"Failed to write to '%s'\n", dst);
