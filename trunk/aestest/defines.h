@@ -9,7 +9,7 @@
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
  */
- 
+
 typedef enum
 {
     AES128 = 128,

@@ -28,22 +28,8 @@ fi
 RUNAESNI_TEST=./$SSHAESNI_TEST" "$SEEDS
 RUNAESNI_PERF=./$SSHAESNI_PERF
 
-####
-
-echo -n "Checking for binaries... " 
-if [ -f $SSHAES_TEST -a -f $SSHAESNI_TEST -a -f $SSHAES_PERF -a -f $SSHAES_PERF ];
-then
-    echo "found"
-else
-    echo "not found. Running make all"
-    make all
-fi
-
-# Build CPUID checker if needed
-if [ ! -f $CPUID_AES ];
-then
-    make cpuid
-fi
+# Make cpuid and tests
+make cpuid sshaes-test sshaesni-test
 
 ####
 
@@ -101,6 +87,7 @@ then
     exit
 fi
 
+make sshaes-perf sshaesni-perf
 echo "Performance data generating ..."
 if [ -f "perf-original.txt" ];
 then
