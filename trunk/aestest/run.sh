@@ -5,16 +5,10 @@
 #
 # @author Pavel Kryukov <kryukov@frtk.ru>
 # @author Maxim Kuznetsov <maks.kuznetsov@gmail.com>
-# @version 3.0
+# @version 3.2
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
-
-SSHAES_TEST="sshaes-test"
-SSHAESNI_TEST="sshaesni-test"
-SSHAES_PERF="sshaes-perf"
-SSHAESNI_PERF="sshaesni-perf"
-CPUID_AES="cpuid"
 
 if [ "$1" = "-p" ];
 then
@@ -25,8 +19,8 @@ else
 fi
 
 # Command for running SSHAESNI test
-RUNAESNI_TEST=./$SSHAESNI_TEST" "$SEEDS
-RUNAESNI_PERF=./$SSHAESNI_PERF
+RUNAESNI_TEST="./sshaesni-test $SEEDS"
+RUNAESNI_PERF="./sshaesni-perf $SEEDS"
 
 # Make cpuid and tests
 make cpuid sshaes-test sshaesni-test
@@ -59,7 +53,7 @@ then
     echo "Original trace is found, it will be reused"
 else
     echo "No original trace file. It will be generated..."
-    ./$SSHAES_TEST $SEEDS
+    ./sshaes-test $SEEDS
     mv test-output.txt test-original-$SEEDS.txt
 fi
 
@@ -94,7 +88,7 @@ then
     echo "Original perf data is found, it will be reused"
 else
     echo "No original perf file. It will be generated..."
-    ./$SSHAES_PERF
+    ./sshaes-perf
     mv perf-output.txt perf-original.txt
 fi
 echo "Generating aes-ni perf data..."
