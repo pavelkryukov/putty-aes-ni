@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "ssh.h"
+#include "coverage.h"
 #include "defines.h"
 
 #ifdef __GNUC__
