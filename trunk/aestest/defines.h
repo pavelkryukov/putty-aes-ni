@@ -10,6 +10,9 @@
  * http://putty-aes-ni.googlecode.com/
  */
 
+#ifndef AESTEST_DEFINES_H
+#define AESTEST_DEFINES_H
+ 
 typedef enum
 {
     AES128 = 16,
@@ -25,3 +28,5 @@ typedef enum
 } TestType;
 
 #define DIM(A) (sizeof(A) / sizeof(A[0]))
+
+#endif /* AESTEST_DEFINES_H */
