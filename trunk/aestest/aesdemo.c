@@ -16,7 +16,7 @@
 
 #include "coverage.h"
 
-#define BUF_LEN (1 << 25)
+#define BUF_LEN (1 << 28)
 
 void cipher(unsigned char* block)
 {
