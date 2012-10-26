@@ -1,0 +1,23 @@
+#summary Step-by-step instruction how to run demonstration
+
+= Checkout =
+
+  # `svn co https://putty-aes-ni.googlecode.com/svn/trunk .`
+  # or have local copy without *.exe и *.txt
+  # `cd aestest`
+
+= Make =
+
+You are able to build 4 binaries:
+
+|| || SW AES || AES NI ||
+|| Encrypt || sshaes-demo || sshaesni-demo ||
+|| Decrypt || sshaes-demo-decode || sshaesni-demo-decode ||
+
+= Run =
+
+Syntax is the same as 'cp' command:
+`<sshdemo> src dst`
+
+= Known issues =
+  * If file size is not multiple of 16 bytes, last bytes may be encrypt/decrypt incorrect.
