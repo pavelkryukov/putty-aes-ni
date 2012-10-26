@@ -28,7 +28,7 @@ void cipher(unsigned char* block)
 #ifdef DECODE
     aes_ssh2_decrypt_blk(handle, block, BUF_LEN);
 #else
-    aes_ssh2_decrypt_blk(handle, block, BUF_LEN);
+    aes_ssh2_encrypt_blk(handle, block, BUF_LEN);
 #endif
     aes_free_context(handle);
 }
