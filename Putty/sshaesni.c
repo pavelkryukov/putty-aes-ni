@@ -232,6 +232,8 @@ void AES_256_Key_Expansion (unsigned char *userkey,
 static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 {
     int Nk;
+    __m128i *keysched = (__m128i*) ctx->keysched;
+    __m128i *invkeysched = (__m128i*) ctx->invkeysched;
 
     assert(keylen == 16 || keylen == 24 || keylen == 32);
 
@@ -257,9 +259,6 @@ static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
     /*
      * Now prepare the modified keys for the inverse cipher.
      */
-    __m128i *keysched = (__m128i*) ctx->keysched;
-    __m128i *invkeysched = (__m128i*) ctx->invkeysched;
-
     invkeysched[ctx->Nr] = keysched[0]; 
     invkeysched[ctx->Nr-1] = _mm_aesimc_si128(keysched[1]); 
     invkeysched[ctx->Nr-2] = _mm_aesimc_si128(keysched[2]); 
