@@ -22,10 +22,7 @@
 #include "ssh.h"
 
 #define MAX_NR 14   /* max no of rounds */
-#define MAX_NK 8    /* max no of words in input key */
 #define NB 4        /* no of words in cipher blk */
-
-#define mulby2(x) ( ((x&0x7F) << 1) ^ (x & 0x80 ? 0x1B : 0) )
 
 typedef struct AESContext AESContext;
 
