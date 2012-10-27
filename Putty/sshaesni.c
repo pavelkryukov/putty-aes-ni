@@ -33,7 +33,7 @@ struct AESContext {
     int Nr;
 };
 
-__m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
+static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
 {
     __m128i temp3;
     temp2 = _mm_shuffle_epi32 (temp2 ,0xff);
@@ -47,7 +47,7 @@ __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
     return temp1;
 } 
 
-void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * temp3) 
+static void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * temp3) 
 { 
     __m128i temp4; 
     *temp2 = _mm_shuffle_epi32 (*temp2, 0x55); 
@@ -64,7 +64,7 @@ void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * temp3)
     *temp3 = _mm_xor_si128 (*temp3, *temp2); 
 } 
 
-void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2) 
+static void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2) 
 { 
     __m128i temp4; 
     *temp2 = _mm_shuffle_epi32(*temp2, 0xff); 
@@ -77,7 +77,7 @@ void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2)
     *temp1 = _mm_xor_si128 (*temp1, *temp2); 
 } 
 
-void KEY_256_ASSIST_2(__m128i* temp1, __m128i * temp3) 
+static void KEY_256_ASSIST_2(__m128i* temp1, __m128i * temp3) 
 { 
     __m128i temp2,temp4; 
     temp4 = _mm_aeskeygenassist_si128 (*temp1, 0x0); 
@@ -91,7 +91,7 @@ void KEY_256_ASSIST_2(__m128i* temp1, __m128i * temp3)
     *temp3 = _mm_xor_si128 (*temp3, temp2); 
 } 
 
-void AES_128_Key_Expansion (unsigned char *userkey, __m128i *key) 
+static void AES_128_Key_Expansion (unsigned char *userkey, __m128i *key) 
 {
     __m128i temp1, temp2;
     temp1 = _mm_loadu_si128((__m128i*)userkey); 
@@ -128,7 +128,7 @@ void AES_128_Key_Expansion (unsigned char *userkey, __m128i *key)
     key[10] = temp1; 
 } 
 
-void AES_192_Key_Expansion (unsigned char *userkey, __m128i *key) 
+static void AES_192_Key_Expansion (unsigned char *userkey, __m128i *key) 
 { 
     __m128i temp1, temp2, temp3;
     temp1 = _mm_loadu_si128((__m128i*)userkey); 
@@ -173,7 +173,7 @@ void AES_192_Key_Expansion (unsigned char *userkey, __m128i *key)
     key[13]=temp3; 
 } 
 
-void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key) 
+static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key) 
 { 
     __m128i temp1, temp2, temp3;
     temp1 = _mm_loadu_si128((__m128i*)userkey); 
