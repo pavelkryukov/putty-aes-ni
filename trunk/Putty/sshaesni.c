@@ -231,53 +231,55 @@ void AES_256_Key_Expansion (unsigned char *userkey,
  */
 static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 {
-    int Nk;
     __m128i *keysched = (__m128i*) ctx->keysched;
     __m128i *invkeysched = (__m128i*) ctx->invkeysched;
 
-    assert(keylen == 16 || keylen == 24 || keylen == 32);
-
-    Nk = keylen / 4;  /* Words in key     */
-    ctx->Nr = 6 + Nk; /* Number of rounds */
+    ctx->Nr = 6 + (keylen / 4); /* Number of rounds */
+    invkeysched += ctx->Nr;
 
     /*
      * Now do the key setup itself.
      */
     switch (keylen)
     {
-        case 16:
-            AES_128_Key_Expansion (key, ctx->keysched);
-            break;
-        case 24:
-            AES_192_Key_Expansion (key, ctx->keysched);
-            break;
-        case 32:
-            AES_256_Key_Expansion (key, ctx->keysched);
-            break;
+    case 16:
+        AES_128_Key_Expansion (key, ctx->keysched);
+        break;
+    case 24:
+        AES_192_Key_Expansion (key, ctx->keysched);
+        break;
+    case 32:
+        AES_256_Key_Expansion (key, ctx->keysched);
+        break;
+    default:
+        assert(0);
     }
 
     /*
      * Now prepare the modified keys for the inverse cipher.
      */
-    invkeysched[ctx->Nr] = keysched[0]; 
-    invkeysched[ctx->Nr-1] = _mm_aesimc_si128(keysched[1]); 
-    invkeysched[ctx->Nr-2] = _mm_aesimc_si128(keysched[2]); 
-    invkeysched[ctx->Nr-3] = _mm_aesimc_si128(keysched[3]); 
-    invkeysched[ctx->Nr-4] = _mm_aesimc_si128(keysched[4]); 
-    invkeysched[ctx->Nr-5] = _mm_aesimc_si128(keysched[5]); 
-    invkeysched[ctx->Nr-6] = _mm_aesimc_si128(keysched[6]); 
-    invkeysched[ctx->Nr-7] = _mm_aesimc_si128(keysched[7]); 
-    invkeysched[ctx->Nr-8] = _mm_aesimc_si128(keysched[8]); 
-    invkeysched[ctx->Nr-9] = _mm_aesimc_si128(keysched[9]); 
-    if (ctx->Nr > 10){ 
-        invkeysched[ctx->Nr-10] = _mm_aesimc_si128(keysched[10]); 
-        invkeysched[ctx->Nr-11] = _mm_aesimc_si128(keysched[11]); 
-    } 
-    if (ctx->Nr > 12){ 
-        invkeysched[ctx->Nr-12] = _mm_aesimc_si128(keysched[12]); 
-        invkeysched[ctx->Nr-13] = _mm_aesimc_si128(keysched[13]); 
-    } 
-    invkeysched[0] = keysched[ctx->Nr]; 
+    *invkeysched = *keysched;
+    switch (ctx->Nr)
+    {
+    case 14:
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+    case 12:
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+    case 10:
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+    default:
+        *(--invkeysched) = *(++keysched); 
+    }
 }
 
 static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
@@ -299,26 +301,26 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
         enc  = _mm_xor_si128(_mm_loadu_si128(block), enc);
 
         /* Perform rounds */
-        enc  = _mm_xor_si128(enc, *(keysched++));
+        enc  = _mm_xor_si128(enc, *keysched);
         switch (ctx->Nr)
         {
         case 14:
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
         case 12:
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
         case 10:
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenclast_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenclast_si128(enc, *(++keysched));
             break;
         default:
             assert(0);
@@ -348,26 +350,26 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
         /* Key schedule ptr   */
         __m128i* keysched = (__m128i*)(ctx->invkeysched);
         last = _mm_loadu_si128(block);
-        dec  = _mm_xor_si128(last, *(keysched++));
+        dec  = _mm_xor_si128(last, *keysched);
         switch (ctx->Nr)
         {
         case 14:
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
         case 12:
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
         case 10:
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdec_si128(dec, *(keysched++));
-            dec = _mm_aesdeclast_si128(dec, *(keysched++));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdeclast_si128(dec, *(++keysched));
             break;
         default:
             assert(0);
@@ -407,26 +409,26 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
         __m128i* keysched = (__m128i*)(ctx->keysched);/* Key schedule ptr   */
 
         /* Perform rounds */
-        enc  = _mm_xor_si128(iv, *(keysched++)); /* Note that we use IV */
+        enc  = _mm_xor_si128(iv, *keysched); /* Note that we use IV */
         switch (ctx->Nr)
         {
         case 14:
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
         case 12:
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
         case 10:
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenc_si128(enc, *(keysched++));
-            enc = _mm_aesenclast_si128(enc, *(keysched++));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenclast_si128(enc, *(++keysched));
             break;
         default:
             assert(0);
