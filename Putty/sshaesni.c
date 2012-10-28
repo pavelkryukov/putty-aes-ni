@@ -282,7 +282,7 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     assert((len & 15) == 0);
 
     /* Load IV */
-    enc = _mm_loadu_si128((__m128i*)(ctx->iv));
+    enc = _mm_load_si128((__m128i*)(ctx->iv));
     while (block < finish)
     {
         /* Key schedule ptr   */
@@ -323,7 +323,7 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     }
 
     /* Update IV */
-    _mm_storeu_si128((__m128i*)(ctx->iv), enc);
+    _mm_store_si128((__m128i*)(ctx->iv), enc);
 }
 
 static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
@@ -335,7 +335,7 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     assert((len & 15) == 0);
 
     /* Load IV */
-    iv = _mm_loadu_si128((__m128i*)(ctx->iv));
+    iv = _mm_load_si128((__m128i*)(ctx->iv));
     while (block < finish)
     {
         /* Key schedule ptr   */
@@ -378,7 +378,7 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     }
 
     /* Update IV */
-    _mm_storeu_si128((__m128i*)(ctx->iv), dec);
+    _mm_store_si128((__m128i*)(ctx->iv), dec);
 }
 
 static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
@@ -392,7 +392,7 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
 
     assert((len & 15) == 0);
 
-    iv = _mm_loadu_si128((__m128i*)ctx->iv);
+    iv = _mm_load_si128((__m128i*)ctx->iv);
 
     while (block < finish)
     {
@@ -442,7 +442,7 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
     }
 
     /* Update IV */
-    _mm_storeu_si128((__m128i*)ctx->iv, iv);
+    _mm_store_si128((__m128i*)ctx->iv, iv);
 }
 
 void *aes_make_context(void)
