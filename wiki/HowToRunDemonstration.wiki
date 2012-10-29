@@ -11,8 +11,8 @@
 You are able to build 4 binaries:
 
 || || SW AES || AES NI ||
-|| Encrypt || sshaes-demo || sshaesni-demo ||
-|| Decrypt || sshaes-demo-decode || sshaesni-demo-decode ||
+|| Encrypt || bin/sshaes-demo || bin/sshaesni-demo ||
+|| Decrypt || bin/sshaes-demo-decode || bin/sshaesni-demo-decode ||
 
 = Run =
 
