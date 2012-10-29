@@ -18,7 +18,7 @@ else
     SEEDS="50"
 fi
 
-mkdir obj bin txt
+mkdir obj bin txt -p
 make bin/cpuid
 
 echo -n "Checking for AES-NI support... "
@@ -48,9 +48,14 @@ changed=$(md5sum txt/test-output-$SEEDS.txt | cut -d ' ' -f 1)
 
 if [ "$original" = "$changed" ];
 then 
-    echo "Tests passed!"
+    echo "********** Tests passed! **************"
 else
-    echo "Tests not passed!"
+    echo "********** Tests not passed! **************"
+    exit
+fi
+
+if [ ! "$1" = "-p" ];
+then
     exit
 fi
 
