@@ -104,6 +104,7 @@ int main()
             fflush(stdout);
         }
     }
+    printf("\n");
 
     free(ptr);
     fclose(fp);
