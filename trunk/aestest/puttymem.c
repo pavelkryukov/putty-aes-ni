@@ -14,12 +14,28 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <string.h>
-#include <malloc.h>
 
-#ifdef __MINGW32__
-#define _mm_malloc(a, b) __mingw_aligned_malloc(a, b)
-#define _mm_free(a)      __mingw_aligned_free(a)
-#endif
+void * aligned_malloc(size_t size, int align)
+{
+    void* mem;
+    if (align < 0) {
+        return NULL;
+    }
+
+    mem = malloc(size + align - 1 + sizeof(void*));
+
+    if (mem != NULL) {
+        void* ptr = (void*)(((size_t)mem + sizeof(void*) + align - 1) & ~(align - 1));
+        *((void**)((size_t)ptr - sizeof(void*))) = mem; /* Store original ptr */
+        return ptr; 
+    }
+    return NULL;
+}
+
+void aligned_free(void *p)
+{
+    free(*((void**)((size_t)p - sizeof(void*))));
+}
 
 void *safemalloc(size_t n, size_t size)
 {
@@ -31,7 +47,7 @@ void *safemalloc(size_t n, size_t size)
         size *= n;
         if (size == 0)
             size = 1;
-        p = _mm_malloc(size, 16);
+        p = aligned_malloc(size, 16);
     }
 
     return p;
@@ -40,7 +56,7 @@ void *safemalloc(size_t n, size_t size)
 void safefree(void *ptr)
 {
     if (ptr)
-        _mm_free(ptr);
+        aligned_free(ptr);
 }
 
 void smemclr(void *b, size_t n) {

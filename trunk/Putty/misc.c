@@ -10,7 +10,6 @@
 #include <assert.h>
 #include "putty.h"
 
-
 /*
  * Parse a string block size specification. This is approximately a
  * subset of the block size specs supported by GNU fileutils:
@@ -488,11 +487,6 @@ void bufchain_fetch(bufchain *ch, void *data, int len)
  * we can also replace the allocator with an ElectricFence-like
  * one.
  */
- 
-#ifdef __MINGW32__
-#define _mm_malloc(a, b) __mingw_aligned_malloc(a, b)
-#define _mm_free(a)      __mingw_aligned_free(a)
-#endif
 
 #ifdef MINEFIELD
 void *minefield_c_malloc(size_t size);
@@ -531,7 +525,7 @@ void *safemalloc(size_t n, size_t size)
 #ifdef MINEFIELD
 	p = minefield_c_malloc(size);
 #else
-	p = _mm_malloc(size, 16);
+	p = malloc(size);
 #endif
     }
 
@@ -566,7 +560,7 @@ void *saferealloc(void *ptr, size_t n, size_t size)
 #ifdef MINEFIELD
 	    p = minefield_c_malloc(size);
 #else
-	    p = _mm_malloc(size, 16);
+	    p = malloc(size);
 #endif
 	} else {
 #ifdef MINEFIELD
@@ -606,7 +600,7 @@ void safefree(void *ptr)
 #ifdef MINEFIELD
 	minefield_c_free(ptr);
 #else
-	_mm_free(ptr);
+	free(ptr);
 #endif
     }
 #ifdef MALLOC_LOG
