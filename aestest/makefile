@@ -1,7 +1,7 @@
 # Makefile for unit tests
 #
 # @author kryukov@frtk.ru
-# @version 3.1
+# @version 4.0
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
@@ -11,24 +11,55 @@ CFLAGS=-O3 -Wall -Werror -maes -msse4 -std=c89 -pedantic -Wno-long-long
 LDFLAGS=
 TARGETS=perf demo demo-decode test
 PUTTY=../Putty
+OBJ_DIR=obj
+BIN_DIR=bin
+TXT_DIR=txt
 
-sshaes-%: sshaes.o aes%.o puttymem.o
+ifeq ($(SDE), yes)
+    SDERUN=sde --
+else
+    SDERUN=
+endif
+
+.SECONDARY:
+	
+
+$(BIN_DIR)/sshaes-%: $(OBJ_DIR)/sshaes.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttymem.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
-sshaesni-%: sshaesni.o aes%.o puttymem.o
+$(BIN_DIR)/sshaesni-%: $(OBJ_DIR)/sshaesni.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttymem.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
-sshae%.o: $(PUTTY)/sshae%.c
+$(OBJ_DIR)/sshae%.o: $(PUTTY)/sshae%.c
 	$(CC) $(CFLAGS) $^ -c -o $@ -I $(PUTTY)
     
-aesdemo-decode.o: aesdemo.c
+$(OBJ_DIR)/aesdemo-decode.o: aesdemo.c
 	$(CC) $(CFLAGS) $^ -c -o $@ -DDECODE
 
-%.o: %.c
+$(OBJ_DIR)/%.o: %.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-cpuid: cpuid.c
+$(BIN_DIR)/cpuid: cpuid.c
 	$(CC) $(CFLAGS) $^ -o $@ -DSILENT
 
+$(TXT_DIR)/test-original-%.txt: $(BIN_DIR)/sshaes-test
+	$^ $*
+	mv test-output.txt $@
+
+$(TXT_DIR)/test-output-%.txt: $(BIN_DIR)/sshaesni-test
+	$(SDERUN) $^ $*
+	mv test-output.txt $@
+
+$(TXT_DIR)/perf-original.txt: $(BIN_DIR)/sshaes-perf
+	$^
+	mv perf-output.txt $@
+
+$(TXT_DIR)/perf-output.txt: $(BIN_DIR)/sshaesni-perf
+	$(SDERUN) $^
+	mv perf-output.txt $@
+
+$(TXT_DIR)/%.sorted.txt: $(TXT_DIR)/%.txt
+	sort $^ > $@
+  
 clean:
-	rm ${TARGETS:%=sshaes-%} ${TARGETS:%=sshaesni-%} cpuid *.exe *.o -f
+	rm $(BIN_DIR) $(OBJ_DIR) $(TXT_DIR) -rf

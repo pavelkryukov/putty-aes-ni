@@ -5,7 +5,7 @@
 #
 # @author Pavel Kryukov <kryukov@frtk.ru>
 # @author Maxim Kuznetsov <maks.kuznetsov@gmail.com>
-# @version 3.2
+# @version 4.0
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
@@ -18,19 +18,14 @@ else
     SEEDS="50"
 fi
 
-# Command for running SSHAESNI test
-RUNAESNI_TEST="./sshaesni-test $SEEDS"
-RUNAESNI_PERF="./sshaesni-perf $SEEDS"
-
-# Make cpuid and tests
-make cpuid sshaes-test sshaesni-test
-
-####
+mkdir obj bin txt
+make bin/cpuid
 
 echo -n "Checking for AES-NI support... "
-if ./cpuid -q ;
+if ./bin/cpuid -q ;
 then
     echo "found"
+    SDE=""
 else
     echo "not found"
     echo -n "Checking for SDE... "
@@ -41,30 +36,15 @@ else
             exit
         else
             echo "found `sde -version | grep 'Ver' | sed 's/\(.*\)Version\:\( *\)\(.*\)/\3/g'`"
-            RUNAESNI_TEST="sde -no-avx -- "$RUNAESNI_TEST
-            RUNAESNI_PERF="sde -no-avx -- "$RUNAESNI_PERF
+            SDE="yes"
         fi
 fi
 
-####
-
-if [ -f "test-original-$SEEDS.txt" ];
-then
-    echo "Original trace is found, it will be reused"
-else
-    echo "No original trace file. It will be generated..."
-    ./sshaes-test $SEEDS
-    mv test-output.txt test-original-$SEEDS.txt
-fi
-
-echo "Generating aes-ni trace..."
-$RUNAESNI_TEST
-
-####
+make txt/test-original-$SEEDS.txt txt/test-output-$SEEDS.txt SDE=$SDE
 
 echo "MD5 check..."
-original=$(md5sum test-original-$SEEDS.txt | cut -d ' ' -f 1)
-changed=$(md5sum test-output.txt | cut -d ' ' -f 1)
+original=$(md5sum txt/test-original-$SEEDS.txt | cut -d ' ' -f 1)
+changed=$(md5sum txt/test-output-$SEEDS.txt | cut -d ' ' -f 1)
 
 if [ "$original" = "$changed" ];
 then 
@@ -74,28 +54,4 @@ else
     exit
 fi
 
-#####
-
-if [ ! "$1" = "-p" ];
-then
-    exit
-fi
-
-make sshaes-perf sshaesni-perf
-echo "Performance data generating ..."
-if [ -f "perf-original.txt" ];
-then
-    echo "Original perf data is found, it will be reused"
-else
-    echo "No original perf file. It will be generated..."
-    ./sshaes-perf
-    mv perf-output.txt perf-original.txt
-fi
-echo "Generating aes-ni perf data..."
-$RUNAESNI_PERF
-
-echo "Sorting..."
-sort perf-original.txt > perf-original.sorted
-sort perf-output.txt > perf-output.sorted
-mv perf-original.sorted perf-original.txt
-mv perf-output.sorted perf-output.txt
+make txt/perf-original.sorted.txt txt/perf-output.sorted.txt SDE=$SDE
