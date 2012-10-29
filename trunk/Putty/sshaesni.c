@@ -27,10 +27,11 @@
 typedef struct AESContext AESContext;
 
 struct AESContext {
-    word32 keysched[(MAX_NR + 1) * NB];
-    word32 invkeysched[(MAX_NR + 1) * NB];
+    word32 keysched[(MAX_NR + 2) * NB];
+    word32 invkeysched[(MAX_NR + 2) * NB];
     word32 iv[NB];
-    int Nr;
+    unsigned int Nr; /* number of rounds */
+	unsigned int offset; /* offset for aligned key expansion */
 };
 
 static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
@@ -222,8 +223,10 @@ static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key)
  */
 static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 {
-    __m128i *keysched = (__m128i*) ctx->keysched;
-    __m128i *invkeysched = (__m128i*) ctx->invkeysched;
+	unsigned int unalignment = (size_t)ctx % 16;
+	ctx->offset = unalignment ? 16 - unalignment : 0;
+    __m128i *keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+    __m128i *invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
 
     ctx->Nr = 6 + (keylen / 4); /* Number of rounds */
     invkeysched += ctx->Nr;
@@ -286,7 +289,7 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     while (block < finish)
     {
         /* Key schedule ptr   */
-        __m128i* keysched = (__m128i*)(ctx->keysched);
+        __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
 
         /* Xor data with IV */
         enc  = _mm_xor_si128(_mm_loadu_si128(block), enc);
@@ -339,7 +342,7 @@ static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     while (block < finish)
     {
         /* Key schedule ptr   */
-        __m128i* keysched = (__m128i*)(ctx->invkeysched);
+        __m128i* keysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
         last = _mm_loadu_si128(block);
         dec  = _mm_xor_si128(last, *keysched);
         switch (ctx->Nr)
@@ -397,7 +400,7 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
     while (block < finish)
     {
         __m128i enc;
-        __m128i* keysched = (__m128i*)(ctx->keysched);/* Key schedule ptr   */
+        __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);/* Key schedule ptr   */
 
         /* Perform rounds */
         enc  = _mm_xor_si128(iv, *keysched); /* Note that we use IV */
