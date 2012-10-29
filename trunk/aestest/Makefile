@@ -14,6 +14,7 @@ PUTTY=../Putty
 OBJ_DIR=obj
 BIN_DIR=bin
 TXT_DIR=txt
+SRC_DIR=src
 
 ifeq ($(SDE), yes)
     SDERUN=sde --
@@ -33,13 +34,13 @@ $(BIN_DIR)/sshaesni-%: $(OBJ_DIR)/sshaesni.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttym
 $(OBJ_DIR)/sshae%.o: $(PUTTY)/sshae%.c
 	$(CC) $(CFLAGS) $^ -c -o $@ -I $(PUTTY)
     
-$(OBJ_DIR)/aesdemo-decode.o: aesdemo.c
+$(OBJ_DIR)/aesdemo-decode.o: $(SRC_DIR)/aesdemo.c
 	$(CC) $(CFLAGS) $^ -c -o $@ -DDECODE
 
-$(OBJ_DIR)/%.o: %.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	$(CC) $(CFLAGS) $^ -c -o $@
 
-$(BIN_DIR)/cpuid: cpuid.c
+$(BIN_DIR)/cpuid: $(SRC_DIR)/cpuid.c
 	$(CC) $(CFLAGS) $^ -o $@ -DSILENT
 
 $(TXT_DIR)/test-original-%.txt: $(BIN_DIR)/sshaes-test
