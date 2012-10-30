@@ -427,7 +427,6 @@ static const struct cp_list_item cp_list[] = {
     {"CP437", 437},
     {"CP620 (Mazovia)", 0, 128, mazovia},
     {"CP819", 28591},
-    {"CP852", 852},
     {"CP878", 20866},
 
     {"Use font encoding", -1},
@@ -437,27 +436,24 @@ static const struct cp_list_item cp_list[] = {
 
 static void link_font(WCHAR * line_tbl, WCHAR * font_tbl, WCHAR attr);
 
-void init_ucs(Conf *conf, struct unicode_data *ucsdata)
+void init_ucs(Config *cfg, struct unicode_data *ucsdata)
 {
     int i, j;
     int used_dtf = 0;
     char tbuf[256];
-    int vtmode;
 
     for (i = 0; i < 256; i++)
 	tbuf[i] = i;
 
     /* Decide on the Line and Font codepages */
-    ucsdata->line_codepage = decode_codepage(conf_get_str(conf,
-							  CONF_line_codepage));
+    ucsdata->line_codepage = decode_codepage(cfg->line_codepage);
 
     if (ucsdata->font_codepage <= 0) { 
 	ucsdata->font_codepage=0; 
 	ucsdata->dbcs_screenfont=0; 
     }
 
-    vtmode = conf_get_int(conf, CONF_vtmode);
-    if (vtmode == VT_OEMONLY) {
+    if (cfg->vtmode == VT_OEMONLY) {
 	ucsdata->font_codepage = 437;
 	ucsdata->dbcs_screenfont = 0;
 	if (ucsdata->line_codepage <= 0)
@@ -477,7 +473,7 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
 	if (ucsdata->font_codepage == 437)
 	    ucsdata->unitab_font[0] = ucsdata->unitab_font[255] = 0xFFFF;
     }
-    if (vtmode == VT_XWINDOWS)
+    if (cfg->vtmode == VT_XWINDOWS)
 	memcpy(ucsdata->unitab_font + 1, unitab_xterm_std,
 	       sizeof(unitab_xterm_std));
 
@@ -485,7 +481,7 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
     get_unitab(CP_OEMCP, ucsdata->unitab_oemcp, 1);
 
     /* Collect CP437 ucs table for SCO acs */
-    if (vtmode == VT_OEMANSI || vtmode == VT_XWINDOWS)
+    if (cfg->vtmode == VT_OEMANSI || cfg->vtmode == VT_XWINDOWS)
 	memcpy(ucsdata->unitab_scoacs, ucsdata->unitab_oemcp,
 	       sizeof(ucsdata->unitab_scoacs));
     else
@@ -494,7 +490,7 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
     /* Collect line set ucs table */
     if (ucsdata->line_codepage == ucsdata->font_codepage &&
 	(ucsdata->dbcs_screenfont ||
-	 vtmode == VT_POORMAN || ucsdata->font_codepage==0)) {
+	 cfg->vtmode == VT_POORMAN || ucsdata->font_codepage==0)) {
 
 	/* For DBCS and POOR fonts force direct to font */
 	used_dtf = 1;
@@ -564,14 +560,14 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
 	    ucsdata->unitab_ctrl[i] = 0xFF;
 
     /* Generate line->screen direct conversion links. */
-    if (vtmode == VT_OEMANSI || vtmode == VT_XWINDOWS)
+    if (cfg->vtmode == VT_OEMANSI || cfg->vtmode == VT_XWINDOWS)
 	link_font(ucsdata->unitab_scoacs, ucsdata->unitab_oemcp, CSET_OEMCP);
 
     link_font(ucsdata->unitab_line, ucsdata->unitab_font, CSET_ACP);
     link_font(ucsdata->unitab_scoacs, ucsdata->unitab_font, CSET_ACP);
     link_font(ucsdata->unitab_xterm, ucsdata->unitab_font, CSET_ACP);
 
-    if (vtmode == VT_OEMANSI || vtmode == VT_XWINDOWS) {
+    if (cfg->vtmode == VT_OEMANSI || cfg->vtmode == VT_XWINDOWS) {
 	link_font(ucsdata->unitab_line, ucsdata->unitab_oemcp, CSET_OEMCP);
 	link_font(ucsdata->unitab_xterm, ucsdata->unitab_oemcp, CSET_OEMCP);
     }
@@ -585,7 +581,7 @@ void init_ucs(Conf *conf, struct unicode_data *ucsdata)
     }
 
     /* Last chance, if !unicode then try poorman links. */
-    if (vtmode != VT_UNICODE) {
+    if (cfg->vtmode != VT_UNICODE) {
 	static const char poorman_scoacs[] = 
 	    "CueaaaaceeeiiiAAE**ooouuyOUc$YPsaiounNao?++**!<>###||||++||++++++--|-+||++--|-+----++++++++##||#aBTPEsyt******EN=+><++-=... n2* ";
 	static const char poorman_latin1[] =
@@ -1205,7 +1201,7 @@ void get_unitab(int codepage, wchar_t * unitab, int ftype)
     }
 }
 
-int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
+int wc_to_mb(int codepage, int flags, wchar_t *wcstr, int wclen,
 	     char *mbstr, int mblen, char *defchr, int *defused,
 	     struct unicode_data *ucsdata)
 {
@@ -1243,7 +1239,7 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
 				   mbstr, mblen, defchr, defused);
 }
 
-int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
+int mb_to_wc(int codepage, int flags, char *mbstr, int mblen,
 	     wchar_t *wcstr, int wclen)
 {
     return MultiByteToWideChar(codepage, flags, mbstr, mblen, wcstr, wclen);

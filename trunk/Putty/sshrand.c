@@ -199,9 +199,9 @@ static void random_add_heavynoise_bitbybit(void *noise, int length)
     pool.poolpos = i;
 }
 
-static void random_timer(void *ctx, unsigned long now)
+static void random_timer(void *ctx, long now)
 {
-    if (random_active > 0 && now == next_noise_collection) {
+    if (random_active > 0 && now - next_noise_collection >= 0) {
 	noise_regular();
 	next_noise_collection =
 	    schedule_timer(NOISE_REGULAR_INTERVAL, random_timer, &pool);

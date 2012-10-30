@@ -20,7 +20,7 @@ int get_userpass_input(prompts_t *p, unsigned char *in, int inlen)
     return ret;
 }
 
-void platform_get_x11_auth(struct X11Display *display, Conf *conf)
+void platform_get_x11_auth(struct X11Display *display, const Config *cfg)
 {
     /* Do nothing, therefore no auth. */
 }
@@ -88,8 +88,7 @@ struct RFile {
 };
 
 RFile *open_existing_file(char *name, uint64 *size,
-			  unsigned long *mtime, unsigned long *atime,
-                          long *perms)
+			  unsigned long *mtime, unsigned long *atime)
 {
     HANDLE h;
     RFile *ret;
@@ -113,9 +112,6 @@ RFile *open_existing_file(char *name, uint64 *size,
 	if (mtime)
 	    TIME_WIN_TO_POSIX(wrtime, *mtime);
     }
-
-    if (perms)
-        *perms = -1;
 
     return ret;
 }
@@ -141,7 +137,7 @@ struct WFile {
     HANDLE h;
 };
 
-WFile *open_new_file(char *name, long perms)
+WFile *open_new_file(char *name)
 {
     HANDLE h;
     WFile *ret;
@@ -486,20 +482,15 @@ extern int select_result(WPARAM, LPARAM);
 int do_eventsel_loop(HANDLE other_event)
 {
     int n, nhandles, nallhandles, netindex, otherindex;
-    unsigned long next, then;
-    long ticks;
+    long next, ticks;
     HANDLE *handles;
     SOCKET *sklist;
     int skcount;
-    unsigned long now = GETTICKCOUNT();
+    long now = GETTICKCOUNT();
 
     if (run_timers(now, &next)) {
-	then = now;
-	now = GETTICKCOUNT();
-	if (now - then > next - then)
-	    ticks = 0;
-	else
-	    ticks = next - now;
+	ticks = next - GETTICKCOUNT();
+	if (ticks < 0) ticks = 0;  /* just in case */
     } else {
 	ticks = INFINITE;
     }
@@ -611,7 +602,7 @@ int ssh_sftp_loop_iteration(void)
     if (p_WSAEventSelect == NULL) {
 	fd_set readfds;
 	int ret;
-	unsigned long now = GETTICKCOUNT(), then;
+	long now = GETTICKCOUNT();
 
 	if (sftp_ssh_socket == INVALID_SOCKET)
 	    return -1;		       /* doom */
@@ -620,17 +611,13 @@ int ssh_sftp_loop_iteration(void)
 	    select_result((WPARAM) sftp_ssh_socket, (LPARAM) FD_WRITE);
 
 	do {
-	    unsigned long next;
-	    long ticks;
+	    long next, ticks;
 	    struct timeval tv, *ptv;
 
 	    if (run_timers(now, &next)) {
-		then = now;
-		now = GETTICKCOUNT();
-		if (now - then > next - then)
-		    ticks = 0;
-		else
-		    ticks = next - now;
+		ticks = next - GETTICKCOUNT();
+		if (ticks <= 0)
+		    ticks = 1;	       /* just in case */
 		tv.tv_sec = ticks / 1000;
 		tv.tv_usec = ticks % 1000 * 1000;
 		ptv = &tv;

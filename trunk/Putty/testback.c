@@ -1,4 +1,4 @@
-/* $Id: testback.c 9214 2011-07-14 18:52:21Z simon $ */
+/* $Id: testback.c 7628 2007-06-30 21:56:44Z jacob $ */
 /*
  * Copyright (c) 1999 Simon Tatham
  * Copyright (c) 1999 Ben Harris
@@ -33,13 +33,13 @@
 
 #include "putty.h"
 
-static const char *null_init(void *, void **, Conf *, char *, int, char **,
+static const char *null_init(void *, void **, Config *, char *, int, char **,
 			     int, int);
-static const char *loop_init(void *, void **, Conf *, char *, int, char **,
+static const char *loop_init(void *, void **, Config *, char *, int, char **,
 			     int, int);
 static void null_free(void *);
 static void loop_free(void *);
-static void null_reconfig(void *, Conf *);
+static void null_reconfig(void *, Config *);
 static int null_send(void *, char *, int);
 static int loop_send(void *, char *, int);
 static int null_sendbuffer(void *);
@@ -74,14 +74,14 @@ struct loop_state {
 };
 
 static const char *null_init(void *frontend_handle, void **backend_handle,
-			     Conf *conf, char *host, int port,
+			     Config *cfg, char *host, int port,
 			     char **realhost, int nodelay, int keepalive) {
 
     return NULL;
 }
 
 static const char *loop_init(void *frontend_handle, void **backend_handle,
-			     Conf *conf, char *host, int port,
+			     Config *cfg, char *host, int port,
 			     char **realhost, int nodelay, int keepalive) {
     struct loop_state *st = snew(struct loop_state);
 
@@ -101,7 +101,7 @@ static void loop_free(void *handle)
     sfree(handle);
 }
 
-static void null_reconfig(void *handle, Conf *conf) {
+static void null_reconfig(void *handle, Config *cfg) {
 
 }
 

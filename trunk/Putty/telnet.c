@@ -201,7 +201,7 @@ typedef struct telnet_tag {
 	    SEENSB, SUBNEGOT, SUBNEG_IAC, SEENCR
     } state;
 
-    Conf *conf;
+    Config cfg;
 
     Pinger pinger;
 } *Telnet;
@@ -363,46 +363,42 @@ static void proc_rec_opt(Telnet telnet, int cmd, int option)
 
 static void process_subneg(Telnet telnet)
 {
-    unsigned char *b, *p, *q;
-    int var, value, n, bsize;
-    char *e, *eval, *ekey, *user;
+    unsigned char b[2048], *p, *q;
+    int var, value, n;
+    char *e;
 
     switch (telnet->sb_opt) {
       case TELOPT_TSPEED:
 	if (telnet->sb_len == 1 && telnet->sb_buf[0] == TELQUAL_SEND) {
 	    char *logbuf;
-	    char *termspeed = conf_get_str(telnet->conf, CONF_termspeed);
-	    b = snewn(20 + strlen(termspeed), unsigned char);
 	    b[0] = IAC;
 	    b[1] = SB;
 	    b[2] = TELOPT_TSPEED;
 	    b[3] = TELQUAL_IS;
-	    strcpy((char *)(b + 4), termspeed);
-	    n = 4 + strlen(termspeed);
+	    strcpy((char *)(b + 4), telnet->cfg.termspeed);
+	    n = 4 + strlen(telnet->cfg.termspeed);
 	    b[n] = IAC;
 	    b[n + 1] = SE;
 	    telnet->bufsize = sk_write(telnet->s, (char *)b, n + 2);
 	    logevent(telnet->frontend, "server:\tSB TSPEED SEND");
-	    logbuf = dupprintf("client:\tSB TSPEED IS %s", termspeed);
+	    logbuf = dupprintf("client:\tSB TSPEED IS %s", telnet->cfg.termspeed);
 	    logevent(telnet->frontend, logbuf);
 	    sfree(logbuf);
-	    sfree(b);
 	} else
 	    logevent(telnet->frontend, "server:\tSB TSPEED <something weird>");
 	break;
       case TELOPT_TTYPE:
 	if (telnet->sb_len == 1 && telnet->sb_buf[0] == TELQUAL_SEND) {
 	    char *logbuf;
-	    char *termtype = conf_get_str(telnet->conf, CONF_termtype);
-	    b = snewn(20 + strlen(termtype), unsigned char);
 	    b[0] = IAC;
 	    b[1] = SB;
 	    b[2] = TELOPT_TTYPE;
 	    b[3] = TELQUAL_IS;
-	    for (n = 0; termtype[n]; n++)
-		b[n + 4] = (termtype[n] >= 'a' && termtype[n] <= 'z' ?
-			    termtype[n] + 'A' - 'a' :
-			    termtype[n]);
+	    for (n = 0; telnet->cfg.termtype[n]; n++)
+		b[n + 4] = (telnet->cfg.termtype[n] >= 'a'
+			    && telnet->cfg.termtype[n] <=
+			    'z' ? telnet->cfg.termtype[n] + 'A' -
+			    'a' : telnet->cfg.termtype[n]);
 	    b[n + 4] = IAC;
 	    b[n + 5] = SE;
 	    telnet->bufsize = sk_write(telnet->s, (char *)b, n + 6);
@@ -411,7 +407,6 @@ static void process_subneg(Telnet telnet)
 	    logbuf = dupprintf("client:\tSB TTYPE IS %s", b + 4);
 	    logevent(telnet->frontend, logbuf);
 	    sfree(logbuf);
-	    sfree(b);
 	} else
 	    logevent(telnet->frontend, "server:\tSB TTYPE <something weird>\r\n");
 	break;
@@ -426,7 +421,7 @@ static void process_subneg(Telnet telnet)
 	    logevent(telnet->frontend, logbuf);
 	    sfree(logbuf);
 	    if (telnet->sb_opt == TELOPT_OLD_ENVIRON) {
-		if (conf_get_int(telnet->conf, CONF_rfc_environ)) {
+		if (telnet->cfg.rfc_environ) {
 		    value = RFC_VALUE;
 		    var = RFC_VAR;
 		} else {
@@ -454,75 +449,50 @@ static void process_subneg(Telnet telnet)
 		value = RFC_VALUE;
 		var = RFC_VAR;
 	    }
-	    bsize = 20;
-	    for (eval = conf_get_str_strs(telnet->conf, CONF_environmt,
-					 NULL, &ekey);
-		 eval != NULL;
-		 eval = conf_get_str_strs(telnet->conf, CONF_environmt,
-					 ekey, &ekey))
-		 bsize += strlen(ekey) + strlen(eval) + 2;
-	    user = get_remote_username(telnet->conf);
-	    if (user)
-		bsize += 6 + strlen(user);
-
-	    b = snewn(bsize, unsigned char);
 	    b[0] = IAC;
 	    b[1] = SB;
 	    b[2] = telnet->sb_opt;
 	    b[3] = TELQUAL_IS;
 	    n = 4;
-	    for (eval = conf_get_str_strs(telnet->conf, CONF_environmt,
-					 NULL, &ekey);
-		 eval != NULL;
-		 eval = conf_get_str_strs(telnet->conf, CONF_environmt,
-					 ekey, &ekey)) {
+	    e = telnet->cfg.environmt;
+	    while (*e) {
 		b[n++] = var;
-		for (e = ekey; *e; e++)
-		    b[n++] = *e;
+		while (*e && *e != '\t')
+		    b[n++] = *e++;
+		if (*e == '\t')
+		    e++;
 		b[n++] = value;
-		for (e = eval; *e; e++)
-		    b[n++] = *e;
+		while (*e)
+		    b[n++] = *e++;
+		e++;
 	    }
-	    if (user) {
-		b[n++] = var;
-		b[n++] = 'U';
-		b[n++] = 'S';
-		b[n++] = 'E';
-		b[n++] = 'R';
-		b[n++] = value;
-		for (e = user; *e; e++)
-		    b[n++] = *e;
-	    }
-	    b[n++] = IAC;
-	    b[n++] = SE;
-	    telnet->bufsize = sk_write(telnet->s, (char *)b, n);
-	    if (n == 6) {
-		logbuf = dupprintf("client:\tSB %s IS <nothing>",
-				   telopt(telnet->sb_opt));
+	    {
+		char user[sizeof(telnet->cfg.username)];
+		(void) get_remote_username(&telnet->cfg, user, sizeof(user));
+		if (*user) {
+		    b[n++] = var;
+		    b[n++] = 'U';
+		    b[n++] = 'S';
+		    b[n++] = 'E';
+		    b[n++] = 'R';
+		    b[n++] = value;
+		    e = user;
+		    while (*e)
+			b[n++] = *e++;
+		}
+		b[n++] = IAC;
+		b[n++] = SE;
+		telnet->bufsize = sk_write(telnet->s, (char *)b, n);
+		logbuf = dupprintf("client:\tSB %s IS %s%s%s%s",
+				   telopt(telnet->sb_opt),
+				   *user ? "USER=" : "",
+				   user,
+				   *user ? " " : "",
+				   n == 6 ? "<nothing>" :
+				   (*telnet->cfg.environmt ? "<stuff>" : ""));
 		logevent(telnet->frontend, logbuf);
 		sfree(logbuf);
-	    } else {
-		logbuf = dupprintf("client:\tSB %s IS:",
-				   telopt(telnet->sb_opt));
-		logevent(telnet->frontend, logbuf);
-		sfree(logbuf);
-		for (eval = conf_get_str_strs(telnet->conf, CONF_environmt,
-					     NULL, &ekey);
-		     eval != NULL;
-		     eval = conf_get_str_strs(telnet->conf, CONF_environmt,
-					     ekey, &ekey)) {
-		    logbuf = dupprintf("\t%s=%s", ekey, eval);
-		    logevent(telnet->frontend, logbuf);
-		    sfree(logbuf);
-		}
-		if (user) {
-		    logbuf = dupprintf("\tUSER=%s", user);
-		    logevent(telnet->frontend, logbuf);
-		    sfree(logbuf);
-		}
 	    }
-	    sfree(b);
-	    sfree(user);
 	}
 	break;
     }
@@ -667,12 +637,6 @@ static int telnet_closing(Plug plug, const char *error_msg, int error_code,
 {
     Telnet telnet = (Telnet) plug;
 
-    /*
-     * We don't implement independent EOF in each direction for Telnet
-     * connections; as soon as we get word that the remote side has
-     * sent us EOF, we wind up the whole connection.
-     */
-
     if (telnet->s) {
         sk_close(telnet->s);
         telnet->s = NULL;
@@ -710,8 +674,9 @@ static void telnet_sent(Plug plug, int bufsize)
  * freed by the caller.
  */
 static const char *telnet_init(void *frontend_handle, void **backend_handle,
-			       Conf *conf, char *host, int port,
-			       char **realhost, int nodelay, int keepalive)
+			       Config *cfg,
+			       char *host, int port, char **realhost,
+			       int nodelay, int keepalive)
 {
     static const struct plug_function_table fn_table = {
 	telnet_log,
@@ -722,12 +687,10 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
     SockAddr addr;
     const char *err;
     Telnet telnet;
-    char *loghost;
-    int addressfamily;
 
     telnet = snew(struct telnet_tag);
     telnet->fn = &fn_table;
-    telnet->conf = conf_copy(conf);
+    telnet->cfg = *cfg;		       /* STRUCTURE COPY */
     telnet->s = NULL;
     telnet->echoing = TRUE;
     telnet->editing = TRUE;
@@ -735,8 +698,8 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
     telnet->sb_buf = NULL;
     telnet->sb_size = 0;
     telnet->frontend = frontend_handle;
-    telnet->term_width = conf_get_int(telnet->conf, CONF_width);
-    telnet->term_height = conf_get_int(telnet->conf, CONF_height);
+    telnet->term_width = telnet->cfg.width;
+    telnet->term_height = telnet->cfg.height;
     telnet->state = TOP_LEVEL;
     telnet->ldisc = NULL;
     telnet->pinger = NULL;
@@ -747,15 +710,14 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
      */
     {
 	char *buf;
-	addressfamily = conf_get_int(telnet->conf, CONF_addressfamily);
 	buf = dupprintf("Looking up host \"%s\"%s", host,
-			(addressfamily == ADDRTYPE_IPV4 ? " (IPv4)" :
-			 (addressfamily == ADDRTYPE_IPV6 ? " (IPv6)" :
+			(cfg->addressfamily == ADDRTYPE_IPV4 ? " (IPv4)" :
+			 (cfg->addressfamily == ADDRTYPE_IPV6 ? " (IPv6)" :
 			  "")));
 	logevent(telnet->frontend, buf);
 	sfree(buf);
     }
-    addr = name_lookup(host, port, realhost, telnet->conf, addressfamily);
+    addr = name_lookup(host, port, realhost, &telnet->cfg, cfg->addressfamily);
     if ((err = sk_addr_error(addr)) != NULL) {
 	sk_addr_free(addr);
 	return err;
@@ -768,16 +730,16 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
      * Open socket.
      */
     telnet->s = new_connection(addr, *realhost, port, 0, 1,
-			       nodelay, keepalive, (Plug) telnet, telnet->conf);
+			       nodelay, keepalive, (Plug) telnet, &telnet->cfg);
     if ((err = sk_socket_error(telnet->s)) != NULL)
 	return err;
 
-    telnet->pinger = pinger_new(telnet->conf, &telnet_backend, telnet);
+    telnet->pinger = pinger_new(&telnet->cfg, &telnet_backend, telnet);
 
     /*
      * Initialise option states.
      */
-    if (conf_get_int(telnet->conf, CONF_passive_telnet)) {
+    if (telnet->cfg.passive_telnet) {
 	const struct Opt *const *o;
 
 	for (o = opts; *o; o++)
@@ -806,12 +768,11 @@ static const char *telnet_init(void *frontend_handle, void **backend_handle,
     /*
      * loghost overrides realhost, if specified.
      */
-    loghost = conf_get_str(telnet->conf, CONF_loghost);
-    if (*loghost) {
+    if (*telnet->cfg.loghost) {
 	char *colon;
 
 	sfree(*realhost);
-	*realhost = dupstr(loghost);
+	*realhost = dupstr(telnet->cfg.loghost);
 	colon = strrchr(*realhost, ':');
 	if (colon) {
 	    /*
@@ -835,7 +796,6 @@ static void telnet_free(void *handle)
 	sk_close(telnet->s);
     if (telnet->pinger)
 	pinger_free(telnet->pinger);
-    conf_free(telnet->conf);
     sfree(telnet);
 }
 /*
@@ -843,12 +803,11 @@ static void telnet_free(void *handle)
  * necessary, in this backend: we just save the fresh config for
  * any subsequent negotiations.
  */
-static void telnet_reconfig(void *handle, Conf *conf)
+static void telnet_reconfig(void *handle, Config *cfg)
 {
     Telnet telnet = (Telnet) handle;
-    pinger_reconfig(telnet->pinger, telnet->conf, conf);
-    conf_free(telnet->conf);
-    telnet->conf = conf_copy(conf);
+    pinger_reconfig(telnet->pinger, &telnet->cfg, cfg);
+    telnet->cfg = *cfg;		       /* STRUCTURE COPY */
 }
 
 /*

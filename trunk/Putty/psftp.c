@@ -36,8 +36,7 @@ void do_sftp_cleanup();
 char *pwd, *homedir;
 static Backend *back;
 static void *backhandle;
-static Conf *conf;
-int sent_eof = FALSE;
+static Config cfg;
 
 /* ----------------------------------------------------------------------
  * Higher-level helper functions used in commands.
@@ -213,7 +212,6 @@ int sftp_get_file(char *fname, char *outfname, int recurse, int restart)
     uint64 offset;
     WFile *file;
     int ret, shown_err = FALSE;
-    struct fxp_attrs attrs;
 
     /*
      * In recursive mode, see if we're dealing with a directory.
@@ -221,6 +219,7 @@ int sftp_get_file(char *fname, char *outfname, int recurse, int restart)
      * subsequent FXP_OPEN will return a usable error message.)
      */
     if (recurse) {
+	struct fxp_attrs attrs;
 	int result;
 
 	sftp_register(req = fxp_stat_send(fname));
@@ -384,13 +383,7 @@ int sftp_get_file(char *fname, char *outfname, int recurse, int restart)
 	}
     }
 
-    sftp_register(req = fxp_stat_send(fname));
-    rreq = sftp_find_request(pktin = sftp_recv());
-    assert(rreq == req);
-    if (!fxp_stat_recv(pktin, rreq, &attrs))
-        attrs.flags = 0;
-
-    sftp_register(req = fxp_open_send(fname, SSH_FXF_READ, NULL));
+    sftp_register(req = fxp_open_send(fname, SSH_FXF_READ));
     rreq = sftp_find_request(pktin = sftp_recv());
     assert(rreq == req);
     fh = fxp_open_recv(pktin, rreq);
@@ -403,7 +396,7 @@ int sftp_get_file(char *fname, char *outfname, int recurse, int restart)
     if (restart) {
 	file = open_existing_wfile(outfname, NULL);
     } else {
-	file = open_new_file(outfname, GET_PERMISSIONS(attrs));
+	file = open_new_file(outfname);
     }
 
     if (!file) {
@@ -507,8 +500,6 @@ int sftp_put_file(char *fname, char *outfname, int recurse, int restart)
     uint64 offset;
     RFile *file;
     int ret, err, eof;
-    struct fxp_attrs attrs;
-    long permissions;
 
     /*
      * In recursive mode, see if we're dealing with a directory.
@@ -516,6 +507,7 @@ int sftp_put_file(char *fname, char *outfname, int recurse, int restart)
      * subsequent fopen will return an error message.)
      */
     if (recurse && file_type(fname) == FILE_TYPE_DIRECTORY) {
+	struct fxp_attrs attrs;
 	int result;
 	int nnames, namesize;
 	char *name, **ournames;
@@ -638,19 +630,16 @@ int sftp_put_file(char *fname, char *outfname, int recurse, int restart)
 	return 1;
     }
 
-    file = open_existing_file(fname, NULL, NULL, NULL, &permissions);
+    file = open_existing_file(fname, NULL, NULL, NULL);
     if (!file) {
 	printf("local: unable to open %s\n", fname);
 	return 0;
     }
-    attrs.flags = 0;
-    PUT_PERMISSIONS(attrs, permissions);
     if (restart) {
-	sftp_register(req = fxp_open_send(outfname, SSH_FXF_WRITE, &attrs));
+	sftp_register(req = fxp_open_send(outfname, SSH_FXF_WRITE));
     } else {
 	sftp_register(req = fxp_open_send(outfname, SSH_FXF_WRITE |
-					  SSH_FXF_CREAT | SSH_FXF_TRUNC,
-                                          &attrs));
+					  SSH_FXF_CREAT | SSH_FXF_TRUNC));
     }
     rreq = sftp_find_request(pktin = sftp_recv());
     assert(rreq == req);
@@ -830,17 +819,7 @@ char *sftp_wildcard_get_filename(SftpWildcardMatcher *swcm)
 		    printf("%s: reading directory: %s\n", swcm->prefix,
 			   fxp_error());
 		return NULL;
-	    } else if (swcm->names->nnames == 0) {
-                /*
-                 * Another failure mode which we treat as EOF is if
-                 * the server reports success from FXP_READDIR but
-                 * returns no actual names. This is unusual, since
-                 * from most servers you'd expect at least "." and
-                 * "..", but there's nothing forbidding a server from
-                 * omitting those if it wants to.
-                 */
-                return NULL;
-            }
+	    }
 
 	    swcm->namepos = 0;
 	}
@@ -991,7 +970,6 @@ int sftp_cmd_close(struct sftp_command *cmd)
     if (back != NULL && back->connected(backhandle)) {
 	char ch;
 	back->special(backhandle, TS_EOF);
-        sent_eof = TRUE;
 	sftp_recvdata(&ch, 1);
     }
     do_sftp_cleanup();
@@ -2287,13 +2265,10 @@ struct sftp_command *sftp_getcmd(FILE *fp, int mode, int modeflags)
 	 *      >this has "quotes" in<
 	 *      >and"this"<
 	 */
-	while (1) {
+	while (*p) {
 	    /* skip whitespace */
 	    while (*p && (*p == ' ' || *p == '\t'))
 		p++;
-            /* terminate loop */
-            if (!*p)
-                break;
 	    /* mark start of word */
 	    q = r = p;		       /* q sits at start, r writes word */
 	    quoting = 0;
@@ -2377,7 +2352,6 @@ void do_sftp_cleanup()
     char ch;
     if (back) {
 	back->special(backhandle, TS_EOF);
-        sent_eof = TRUE;
 	sftp_recvdata(&ch, 1);
 	back->free(backhandle);
 	sftp_cleanup_request();
@@ -2586,19 +2560,6 @@ int from_backend_untrusted(void *frontend_handle, const char *data, int len)
     assert(!"Unexpected call to from_backend_untrusted()");
     return 0; /* not reached */
 }
-int from_backend_eof(void *frontend)
-{
-    /*
-     * We expect to be the party deciding when to close the
-     * connection, so if we see EOF before we sent it ourselves, we
-     * should panic.
-     */
-    if (!sent_eof) {
-        connection_fatal(frontend,
-                         "Received unexpected end-of-file from SFTP server");
-    }
-    return FALSE;
-}
 int sftp_recvdata(char *buf, int len)
 {
     outptr = (unsigned char *) buf;
@@ -2703,30 +2664,32 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
      */
     if (!loaded_session) {
 	/* Try to load settings for `host' into a temporary config */
-	Conf *conf2 = conf_new();
-	conf_set_str(conf2, CONF_host, "");
-	do_defaults(host, conf2);
-	if (conf_get_str(conf2, CONF_host)[0] != '\0') {
+	Config cfg2;
+	cfg2.host[0] = '\0';
+	do_defaults(host, &cfg2);
+	if (cfg2.host[0] != '\0') {
 	    /* Settings present and include hostname */
 	    /* Re-load data into the real config. */
-	    do_defaults(host, conf);
+	    do_defaults(host, &cfg);
 	} else {
 	    /* Session doesn't exist or mention a hostname. */
 	    /* Use `host' as a bare hostname. */
-	    conf_set_str(conf, CONF_host, host);
+	    strncpy(cfg.host, host, sizeof(cfg.host) - 1);
+	    cfg.host[sizeof(cfg.host) - 1] = '\0';
 	}
     } else {
 	/* Patch in hostname `host' to session details. */
-	conf_set_str(conf, CONF_host, host);
+	strncpy(cfg.host, host, sizeof(cfg.host) - 1);
+	cfg.host[sizeof(cfg.host) - 1] = '\0';
     }
 
     /*
      * Force use of SSH. (If they got the protocol wrong we assume the
      * port is useless too.)
      */
-    if (conf_get_int(conf, CONF_protocol) != PROT_SSH) {
-        conf_set_int(conf, CONF_protocol, PROT_SSH);
-        conf_set_int(conf, CONF_port, 22);
+    if (cfg.protocol != PROT_SSH) {
+        cfg.protocol = PROT_SSH;
+        cfg.port = 22;
     }
 
     /*
@@ -2735,82 +2698,78 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
      * work for SFTP. (Can be overridden with `-1' option.)
      * But if it says `2 only' or `2', respect which.
      */
-    if ((conf_get_int(conf, CONF_sshprot) & ~1) != 2)   /* is it 2 or 3? */
-	conf_set_int(conf, CONF_sshprot, 2);
+    if (cfg.sshprot != 2 && cfg.sshprot != 3)
+	cfg.sshprot = 2;
 
     /*
      * Enact command-line overrides.
      */
-    cmdline_run_saved(conf);
+    cmdline_run_saved(&cfg);
 
     /*
-     * Muck about with the hostname in various ways.
+     * Trim leading whitespace off the hostname if it's there.
      */
     {
-	char *hostbuf = dupstr(conf_get_str(conf, CONF_host));
-	char *host = hostbuf;
-	char *p, *q;
+	int space = strspn(cfg.host, " \t");
+	memmove(cfg.host, cfg.host+space, 1+strlen(cfg.host)-space);
+    }
 
-	/*
-	 * Trim leading whitespace.
-	 */
-	host += strspn(host, " \t");
-
-	/*
-	 * See if host is of the form user@host, and separate out
-	 * the username if so.
-	 */
-	if (host[0] != '\0') {
-	    char *atsign = strrchr(host, '@');
-	    if (atsign) {
-		*atsign = '\0';
-		conf_set_str(conf, CONF_username, host);
-		host = atsign + 1;
+    /* See if host is of the form user@host */
+    if (cfg.host[0] != '\0') {
+	char *atsign = strrchr(cfg.host, '@');
+	/* Make sure we're not overflowing the user field */
+	if (atsign) {
+	    if (atsign - cfg.host < sizeof cfg.username) {
+		strncpy(cfg.username, cfg.host, atsign - cfg.host);
+		cfg.username[atsign - cfg.host] = '\0';
 	    }
+	    memmove(cfg.host, atsign + 1, 1 + strlen(atsign + 1));
 	}
+    }
 
-	/*
-	 * Remove any remaining whitespace.
-	 */
-	p = hostbuf;
-	q = host;
-	while (*q) {
-	    if (*q != ' ' && *q != '\t')
-		*p++ = *q;
-	    q++;
+    /*
+     * Trim a colon suffix off the hostname if it's there.
+     */
+    cfg.host[strcspn(cfg.host, ":")] = '\0';
+
+    /*
+     * Remove any remaining whitespace from the hostname.
+     */
+    {
+	int p1 = 0, p2 = 0;
+	while (cfg.host[p2] != '\0') {
+	    if (cfg.host[p2] != ' ' && cfg.host[p2] != '\t') {
+		cfg.host[p1] = cfg.host[p2];
+		p1++;
+	    }
+	    p2++;
 	}
-	*p = '\0';
-
-	conf_set_str(conf, CONF_host, hostbuf);
-	sfree(hostbuf);
+	cfg.host[p1] = '\0';
     }
 
     /* Set username */
     if (user != NULL && user[0] != '\0') {
-	conf_set_str(conf, CONF_username, user);
+	strncpy(cfg.username, user, sizeof(cfg.username) - 1);
+	cfg.username[sizeof(cfg.username) - 1] = '\0';
     }
 
     if (portnumber)
-	conf_set_int(conf, CONF_port, portnumber);
+	cfg.port = portnumber;
 
     /*
      * Disable scary things which shouldn't be enabled for simple
      * things like SCP and SFTP: agent forwarding, port forwarding,
      * X forwarding.
      */
-    conf_set_int(conf, CONF_x11_forward, 0);
-    conf_set_int(conf, CONF_agentfwd, 0);
-    conf_set_int(conf, CONF_ssh_simple, TRUE);
-    {
-	char *key;
-	while ((key = conf_get_str_nthstrkey(conf, CONF_portfwd, 0)) != NULL)
-	    conf_del_str_str(conf, CONF_portfwd, key);
-    }
+    cfg.x11_forward = 0;
+    cfg.agentfwd = 0;
+    cfg.portfwd[0] = cfg.portfwd[1] = '\0';
+    cfg.ssh_simple = TRUE;
 
     /* Set up subsystem name. */
-    conf_set_str(conf, CONF_remote_cmd, "sftp");
-    conf_set_int(conf, CONF_ssh_subsys, TRUE);
-    conf_set_int(conf, CONF_nopty, TRUE);
+    strcpy(cfg.remote_cmd, "sftp");
+    cfg.ssh_subsys = TRUE;
+    cfg.nopty = TRUE;
 
     /*
      * Set up fallback option, for SSH-1 servers or servers with the
@@ -2829,26 +2788,21 @@ static int psftp_connect(char *userhost, char *user, int portnumber)
      * obvious pathnames and then give up, and when it does give up
      * it will print the preferred pathname in the error messages.
      */
-    conf_set_str(conf, CONF_remote_cmd2,
-		 "test -x /usr/lib/sftp-server &&"
-		 " exec /usr/lib/sftp-server\n"
-		 "test -x /usr/local/lib/sftp-server &&"
-		 " exec /usr/local/lib/sftp-server\n"
-		 "exec sftp-server");
-    conf_set_int(conf, CONF_ssh_subsys2, FALSE);
+    cfg.remote_cmd_ptr2 =
+	"test -x /usr/lib/sftp-server && exec /usr/lib/sftp-server\n"
+	"test -x /usr/local/lib/sftp-server && exec /usr/local/lib/sftp-server\n"
+	"exec sftp-server";
+    cfg.ssh_subsys2 = FALSE;
 
     back = &ssh_backend;
 
-    err = back->init(NULL, &backhandle, conf,
-		     conf_get_str(conf, CONF_host),
-		     conf_get_int(conf, CONF_port),
-		     &realhost, 0,
-		     conf_get_int(conf, CONF_tcp_keepalives));
+    err = back->init(NULL, &backhandle, &cfg, cfg.host, cfg.port, &realhost,
+		     0, cfg.tcp_keepalives);
     if (err != NULL) {
 	fprintf(stderr, "ssh_init: %s\n", err);
 	return 1;
     }
-    logctx = log_init(NULL, conf);
+    logctx = log_init(NULL, &cfg);
     back->provide_logctx(backhandle, logctx);
     console_provide_logctx(logctx);
     while (!back->sendok(backhandle)) {
@@ -2900,8 +2854,7 @@ int psftp_main(int argc, char *argv[])
     userhost = user = NULL;
 
     /* Load Default Settings before doing anything else. */
-    conf = conf_new();
-    do_defaults(NULL, conf);
+    do_defaults(NULL, &cfg);
     loaded_session = FALSE;
 
     for (i = 1; i < argc; i++) {
@@ -2913,7 +2866,7 @@ int psftp_main(int argc, char *argv[])
                 userhost = dupstr(argv[i]);
 	    continue;
 	}
-	ret = cmdline_process_param(argv[i], i+1<argc?argv[i+1]:NULL, 1, conf);
+	ret = cmdline_process_param(argv[i], i+1<argc?argv[i+1]:NULL, 1, &cfg);
 	if (ret == -2) {
 	    cmdline_error("option \"%s\" requires an argument", argv[i]);
 	} else if (ret == 2) {
@@ -2923,14 +2876,12 @@ int psftp_main(int argc, char *argv[])
 	    if (flags & FLAG_VERBOSE)
 		verbose = 1;
 	} else if (strcmp(argv[i], "-h") == 0 ||
-		   strcmp(argv[i], "-?") == 0 ||
-                   strcmp(argv[i], "--help") == 0) {
+		   strcmp(argv[i], "-?") == 0) {
 	    usage();
         } else if (strcmp(argv[i], "-pgpfp") == 0) {
             pgp_fingerprints();
             return 1;
-	} else if (strcmp(argv[i], "-V") == 0 ||
-                   strcmp(argv[i], "--version") == 0) {
+	} else if (strcmp(argv[i], "-V") == 0) {
 	    version();
 	} else if (strcmp(argv[i], "-batch") == 0) {
 	    console_batch_mode = 1;
@@ -2957,8 +2908,8 @@ int psftp_main(int argc, char *argv[])
      * otherwise been specified, pop it in `userhost' so that
      * `psftp -load sessname' is sufficient to start a session.
      */
-    if (!userhost && conf_get_str(conf, CONF_host)[0] != '\0') {
-	userhost = dupstr(conf_get_str(conf, CONF_host));
+    if (!userhost && cfg.host[0] != '\0') {
+	userhost = dupstr(cfg.host);
     }
 
     /*
@@ -2983,7 +2934,6 @@ int psftp_main(int argc, char *argv[])
     if (back != NULL && back->connected(backhandle)) {
 	char ch;
 	back->special(backhandle, TS_EOF);
-        sent_eof = TRUE;
 	sftp_recvdata(&ch, 1);
     }
     do_sftp_cleanup();

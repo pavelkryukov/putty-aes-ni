@@ -38,7 +38,6 @@
  */
 
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 
 #ifdef ZLIB_STANDALONE

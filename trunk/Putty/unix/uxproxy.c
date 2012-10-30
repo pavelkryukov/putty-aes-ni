@@ -29,7 +29,6 @@ struct Socket_localproxy_tag {
 
     bufchain pending_output_data;
     bufchain pending_input_data;
-    enum { EOF_NO, EOF_PENDING, EOF_SENT } outgoingeof;
 
     void *privptr;
 };
@@ -96,14 +95,12 @@ static void sk_localproxy_close (Socket s)
 {
     Local_Proxy_Socket ps = (Local_Proxy_Socket) s;
 
-    if (ps->to_cmd >= 0) {
-        del234(localproxy_by_tofd, ps);
-        uxsel_del(ps->to_cmd);
-        close(ps->to_cmd);
-    }
-
     del234(localproxy_by_fromfd, ps);
+    del234(localproxy_by_tofd, ps);
+
+    uxsel_del(ps->to_cmd);
     uxsel_del(ps->from_cmd);
+    close(ps->to_cmd);
     close(ps->from_cmd);
 
     sfree(ps);
@@ -132,14 +129,6 @@ static int localproxy_try_send(Local_Proxy_Socket ps)
 	}
     }
 
-    if (ps->outgoingeof == EOF_PENDING) {
-        del234(localproxy_by_tofd, ps);
-        close(ps->to_cmd);
-        uxsel_del(ps->to_cmd);
-        ps->to_cmd = -1;
-        ps->outgoingeof = EOF_SENT;
-    }
-
     if (bufchain_size(&ps->pending_output_data) == 0)
 	uxsel_del(ps->to_cmd);
     else
@@ -151,8 +140,6 @@ static int localproxy_try_send(Local_Proxy_Socket ps)
 static int sk_localproxy_write (Socket s, const char *data, int len)
 {
     Local_Proxy_Socket ps = (Local_Proxy_Socket) s;
-
-    assert(ps->outgoingeof == EOF_NO);
 
     bufchain_add(&ps->pending_output_data, data, len);
 
@@ -168,16 +155,6 @@ static int sk_localproxy_write_oob (Socket s, const char *data, int len)
      * better we can do
      */
     return sk_localproxy_write(s, data, len);
-}
-
-static void sk_localproxy_write_eof (Socket s)
-{
-    Local_Proxy_Socket ps = (Local_Proxy_Socket) s;
-
-    assert(ps->outgoingeof == EOF_NO);
-    ps->outgoingeof = EOF_PENDING;
-
-    localproxy_try_send(ps);
 }
 
 static void sk_localproxy_flush (Socket s)
@@ -247,7 +224,7 @@ static int localproxy_select_result(int fd, int event)
 Socket platform_new_connection(SockAddr addr, char *hostname,
 			       int port, int privport,
 			       int oobinline, int nodelay, int keepalive,
-			       Plug plug, Conf *conf)
+			       Plug plug, const Config *cfg)
 {
     char *cmd;
 
@@ -256,7 +233,6 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
 	sk_localproxy_close,
 	sk_localproxy_write,
 	sk_localproxy_write_oob,
-	sk_localproxy_write_eof,
 	sk_localproxy_flush,
 	sk_localproxy_set_private_ptr,
 	sk_localproxy_get_private_ptr,
@@ -267,16 +243,15 @@ Socket platform_new_connection(SockAddr addr, char *hostname,
     Local_Proxy_Socket ret;
     int to_cmd_pipe[2], from_cmd_pipe[2], pid;
 
-    if (conf_get_int(conf, CONF_proxy_type) != PROXY_CMD)
+    if (cfg->proxy_type != PROXY_CMD)
 	return NULL;
 
-    cmd = format_telnet_command(addr, port, conf);
+    cmd = format_telnet_command(addr, port, cfg);
 
     ret = snew(struct Socket_localproxy_tag);
     ret->fn = &socket_fn_table;
     ret->plug = plug;
     ret->error = NULL;
-    ret->outgoingeof = EOF_NO;
 
     bufchain_init(&ret->pending_input_data);
     bufchain_init(&ret->pending_output_data);

@@ -8,7 +8,7 @@
 #define COLUMNS_H
 
 #include <gdk/gdk.h>
-#include <gtk/gtk.h>
+#include <gtk/gtkcontainer.h>
 
 #ifdef __cplusplus
 extern "C" {
