@@ -16,13 +16,12 @@ struct LogContext {
     FILE *lgfp;
     enum { L_CLOSED, L_OPENING, L_OPEN, L_ERROR } state;
     bufchain queue;
-    Filename *currlogfilename;
+    Filename currlogfilename;
     void *frontend;
-    Conf *conf;
-    int logtype;		       /* cached out of conf */
+    Config cfg;
 };
 
-static Filename *xlatlognam(Filename *s, char *hostname, struct tm *tm);
+static void xlatlognam(Filename *d, Filename s, char *hostname, struct tm *tm);
 
 /*
  * Internal wrapper function which must be called for _all_ output
@@ -76,7 +75,7 @@ static void logprintf(struct LogContext *ctx, const char *fmt, ...)
  */
 void logflush(void *handle) {
     struct LogContext *ctx = (struct LogContext *)handle;
-    if (ctx->logtype > 0)
+    if (ctx->cfg.logtype > 0)
 	if (ctx->state == L_OPEN)
 	    fflush(ctx->lgfp);
 }
@@ -111,12 +110,12 @@ static void logfopen_callback(void *handle, int mode)
 		      ctx->state == L_ERROR ?
 		      (mode == 0 ? "Disabled writing" : "Error writing") :
 		      (mode == 1 ? "Appending" : "Writing new"),
-		      (ctx->logtype == LGTYP_ASCII ? "ASCII" :
-		       ctx->logtype == LGTYP_DEBUG ? "raw" :
-		       ctx->logtype == LGTYP_PACKETS ? "SSH packets" :
-		       ctx->logtype == LGTYP_SSHRAW ? "SSH raw data" :
+		      (ctx->cfg.logtype == LGTYP_ASCII ? "ASCII" :
+		       ctx->cfg.logtype == LGTYP_DEBUG ? "raw" :
+		       ctx->cfg.logtype == LGTYP_PACKETS ? "SSH packets" :
+		       ctx->cfg.logtype == LGTYP_SSHRAW ? "SSH raw data" :
 		       "unknown"),
-		      filename_to_str(ctx->currlogfilename));
+		      filename_to_str(&ctx->currlogfilename));
     logevent(ctx->frontend, event);
     sfree(event);
 
@@ -149,24 +148,19 @@ void logfopen(void *handle)
     if (ctx->state != L_CLOSED)
 	return;
 
-    if (!ctx->logtype)
+    if (!ctx->cfg.logtype)
 	return;
 
     tm = ltime();
 
     /* substitute special codes in file name */
-    if (ctx->currlogfilename)
-        filename_free(ctx->currlogfilename);
-    ctx->currlogfilename = 
-        xlatlognam(conf_get_filename(ctx->conf, CONF_logfilename),
-                   conf_get_str(ctx->conf, CONF_host), &tm);
+    xlatlognam(&ctx->currlogfilename, ctx->cfg.logfilename,ctx->cfg.host, &tm);
 
     ctx->lgfp = f_open(ctx->currlogfilename, "r", FALSE);  /* file already present? */
     if (ctx->lgfp) {
-	int logxfovr = conf_get_int(ctx->conf, CONF_logxfovr);
 	fclose(ctx->lgfp);
-	if (logxfovr != LGXF_ASK) {
-	    mode = ((logxfovr == LGXF_OVR) ? 2 : 1);
+	if (ctx->cfg.logxfovr != LGXF_ASK) {
+	    mode = ((ctx->cfg.logxfovr == LGXF_OVR) ? 2 : 1);
 	} else
 	    mode = askappend(ctx->frontend, ctx->currlogfilename,
 			     logfopen_callback, ctx);
@@ -195,8 +189,8 @@ void logfclose(void *handle)
 void logtraffic(void *handle, unsigned char c, int logmode)
 {
     struct LogContext *ctx = (struct LogContext *)handle;
-    if (ctx->logtype > 0) {
-	if (ctx->logtype == logmode)
+    if (ctx->cfg.logtype > 0) {
+	if (ctx->cfg.logtype == logmode)
 	    logwrite(ctx, &c, 1);
     }
 }
@@ -220,8 +214,8 @@ void log_eventlog(void *handle, const char *event)
     /* If we don't have a context yet (eg winnet.c init) then skip entirely */
     if (!ctx)
 	return;
-    if (ctx->logtype != LGTYP_PACKETS &&
-	ctx->logtype != LGTYP_SSHRAW)
+    if (ctx->cfg.logtype != LGTYP_PACKETS &&
+	ctx->cfg.logtype != LGTYP_SSHRAW)
 	return;
     logprintf(ctx, "Event Log: %s\r\n", event);
     logflush(ctx);
@@ -242,8 +236,8 @@ void log_packet(void *handle, int direction, int type,
     int p = 0, b = 0, omitted = 0;
     int output_pos = 0; /* NZ if pending output in dumpdata */
 
-    if (!(ctx->logtype == LGTYP_SSHRAW ||
-          (ctx->logtype == LGTYP_PACKETS && texttype)))
+    if (!(ctx->cfg.logtype == LGTYP_SSHRAW ||
+          (ctx->cfg.logtype == LGTYP_PACKETS && texttype)))
 	return;
 
     /* Packet header. */
@@ -258,21 +252,8 @@ void log_packet(void *handle, int direction, int type,
 		      type, type, texttype);
 	}
     } else {
-        /*
-         * Raw data is logged with a timestamp, so that it's possible
-         * to determine whether a mysterious delay occurred at the
-         * client or server end. (Timestamping the raw data avoids
-         * cluttering the normal case of only logging decrypted SSH
-         * messages, and also adds conceptual rigour in the case where
-         * an SSH message arrives in several pieces.)
-         */
-        char buf[256];
-        struct tm tm;
-	tm = ltime();
-	strftime(buf, 24, "%Y-%m-%d %H:%M:%S", &tm);
-        logprintf(ctx, "%s raw data at %s\r\n",
-                  direction == PKT_INCOMING ? "Incoming" : "Outgoing",
-                  buf);
+        logprintf(ctx, "%s raw data\r\n",
+                  direction == PKT_INCOMING ? "Incoming" : "Outgoing");
     }
 
     /*
@@ -345,15 +326,13 @@ void log_packet(void *handle, int direction, int type,
     logflush(ctx);
 }
 
-void *log_init(void *frontend, Conf *conf)
+void *log_init(void *frontend, Config *cfg)
 {
     struct LogContext *ctx = snew(struct LogContext);
     ctx->lgfp = NULL;
     ctx->state = L_CLOSED;
     ctx->frontend = frontend;
-    ctx->conf = conf_copy(conf);
-    ctx->logtype = conf_get_int(ctx->conf, CONF_logtype);
-    ctx->currlogfilename = NULL;
+    ctx->cfg = *cfg;		       /* STRUCTURE COPY */
     bufchain_init(&ctx->queue);
     return ctx;
 }
@@ -364,20 +343,16 @@ void log_free(void *handle)
 
     logfclose(ctx);
     bufchain_clear(&ctx->queue);
-    if (ctx->currlogfilename)
-        filename_free(ctx->currlogfilename);
     sfree(ctx);
 }
 
-void log_reconfig(void *handle, Conf *conf)
+void log_reconfig(void *handle, Config *cfg)
 {
     struct LogContext *ctx = (struct LogContext *)handle;
     int reset_logging;
 
-    if (!filename_equal(conf_get_filename(ctx->conf, CONF_logfilename),
-			conf_get_filename(conf, CONF_logfilename)) ||
-	conf_get_int(ctx->conf, CONF_logtype) !=
-	conf_get_int(conf, CONF_logtype))
+    if (!filename_equal(ctx->cfg.logfilename, cfg->logfilename) ||
+	ctx->cfg.logtype != cfg->logtype)
 	reset_logging = TRUE;
     else
 	reset_logging = FALSE;
@@ -385,10 +360,7 @@ void log_reconfig(void *handle, Conf *conf)
     if (reset_logging)
 	logfclose(ctx);
 
-    conf_free(ctx->conf);
-    ctx->conf = conf_copy(conf);
-
-    ctx->logtype = conf_get_int(ctx->conf, CONF_logtype);
+    ctx->cfg = *cfg;		       /* STRUCTURE COPY */
 
     if (reset_logging)
 	logfopen(ctx);
@@ -400,19 +372,17 @@ void log_reconfig(void *handle, Conf *conf)
  *
  * "&Y":YYYY   "&m":MM   "&d":DD   "&T":hhmmss   "&h":<hostname>   "&&":&
  */
-static Filename *xlatlognam(Filename *src, char *hostname, struct tm *tm)
-{
+static void xlatlognam(Filename *dest, Filename src,
+		       char *hostname, struct tm *tm) {
     char buf[10], *bufp;
     int size;
-    char *buffer;
-    int buflen, bufsize;
+    char buffer[FILENAME_MAX];
+    int len = sizeof(buffer)-1;
+    char *d;
     const char *s;
-    Filename *ret;
 
-    bufsize = FILENAME_MAX;
-    buffer = snewn(bufsize, char);
-    buflen = 0;
-    s = filename_to_str(src);
+    d = buffer;
+    s = filename_to_str(&src);
 
     while (*s) {
 	/* Let (bufp, len) be the string to append. */
@@ -448,16 +418,13 @@ static Filename *xlatlognam(Filename *src, char *hostname, struct tm *tm)
 	    buf[0] = *s++;
 	    size = 1;
 	}
-        if (bufsize <= buflen + size) {
-            bufsize = (buflen + size) * 5 / 4 + 512;
-            buffer = sresize(buffer, bufsize, char);
-        }
-	memcpy(buffer + buflen, bufp, size);
-	buflen += size;
+	if (size > len)
+	    size = len;
+	memcpy(d, bufp, size);
+	d += size;
+	len -= size;
     }
-    buffer[buflen] = '\0';
+    *d = '\0';
 
-    ret = filename_from_str(buffer);
-    sfree(buffer);
-    return ret;
+    *dest = filename_from_str(buffer);
 }

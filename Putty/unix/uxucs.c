@@ -21,7 +21,7 @@ int is_dbcs_leadbyte(int codepage, char byte)
     return 0;			       /* we don't do DBCS */
 }
 
-int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
+int mb_to_wc(int codepage, int flags, char *mbstr, int mblen,
 	     wchar_t *wcstr, int wclen)
 {
     if (codepage == DEFAULT_CODEPAGE) {
@@ -29,6 +29,7 @@ int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
 	mbstate_t state;
 
 	memset(&state, 0, sizeof state);
+	setlocale(LC_CTYPE, "");
 
 	while (mblen > 0) {
 	    size_t i = mbrtowc(wcstr+n, mbstr, (size_t)mblen, &state);
@@ -38,6 +39,8 @@ int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
 	    mbstr += i;
 	    mblen -= i;
 	}
+
+	setlocale(LC_CTYPE, "C");
 
 	return n;
     } else if (codepage == CS_NONE) {
@@ -56,7 +59,7 @@ int mb_to_wc(int codepage, int flags, const char *mbstr, int mblen,
 				  NULL, NULL, 0);
 }
 
-int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
+int wc_to_mb(int codepage, int flags, wchar_t *wcstr, int wclen,
 	     char *mbstr, int mblen, char *defchr, int *defused,
 	     struct unicode_data *ucsdata)
 {
@@ -70,6 +73,7 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
 	int n = 0;
 
 	memset(&state, 0, sizeof state);
+	setlocale(LC_CTYPE, "");
 
 	while (wclen > 0) {
 	    int i = wcrtomb(output, wcstr[0], &state);
@@ -80,6 +84,8 @@ int wc_to_mb(int codepage, int flags, const wchar_t *wcstr, int wclen,
 	    wcstr++;
 	    wclen--;
 	}
+
+	setlocale(LC_CTYPE, "C");
 
 	return n;
     } else if (codepage == CS_NONE) {
@@ -133,7 +139,7 @@ int init_ucs(struct unicode_data *ucsdata, char *linecharset,
 
     /*
      * Failing that, line_codepage should be decoded from the
-     * specification in conf.
+     * specification in cfg.
      */
     if (ucsdata->line_codepage == CS_NONE)
 	ucsdata->line_codepage = decode_codepage(linecharset);
@@ -156,8 +162,7 @@ int init_ucs(struct unicode_data *ucsdata, char *linecharset,
      * in the line codepage into Unicode.
      */
     for (i = 0; i < 256; i++) {
-	char c[1];
-        const char *p;
+	char c[1], *p;
 	wchar_t wc[1];
 	int len;
 	c[0] = i;
@@ -211,8 +216,7 @@ int init_ucs(struct unicode_data *ucsdata, char *linecharset,
      * simply CP437.
      */
     for (i = 0; i < 256; i++) {
-	char c[1];
-        const char *p;
+	char c[1], *p;
 	wchar_t wc[1];
 	int len;
 	c[0] = i;

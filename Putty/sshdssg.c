@@ -9,7 +9,6 @@ int dsa_generate(struct dss_key *key, int bits, progfn_t pfn,
 		 void *pfnparam)
 {
     Bignum qm1, power, g, h, tmp;
-    unsigned pfirst, qfirst;
     int progress;
 
     /*
@@ -71,16 +70,15 @@ int dsa_generate(struct dss_key *key, int bits, progfn_t pfn,
 
     pfn(pfnparam, PROGFN_READY, 0, 0);
 
-    invent_firstbits(&pfirst, &qfirst);
     /*
      * Generate q: a prime of length 160.
      */
-    key->q = primegen(160, 2, 2, NULL, 1, pfn, pfnparam, qfirst);
+    key->q = primegen(160, 2, 2, NULL, 1, pfn, pfnparam);
     /*
      * Now generate p: a prime of length `bits', such that p-1 is
      * divisible by q.
      */
-    key->p = primegen(bits-160, 2, 2, key->q, 2, pfn, pfnparam, pfirst);
+    key->p = primegen(bits-160, 2, 2, key->q, 2, pfn, pfnparam);
 
     /*
      * Next we need g. Raise 2 to the power (p-1)/q modulo p, and

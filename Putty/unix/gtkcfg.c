@@ -42,8 +42,8 @@ void gtk_setup_config_box(struct controlbox *b, int midsession, void *win)
 		    "Control the scrollback in the window");
     ctrl_checkbox(s, "Scrollbar on left", 'l',
 		  HELPCTX(no_help),
-		  conf_checkbox_handler,
-                  I(CONF_scrollbar_on_left));
+		  dlg_stdcheckbox_handler,
+                  I(offsetof(Config,scrollbar_on_left)));
     /*
      * Really this wants to go just after `Display scrollbar'. See
      * if we can find that control, and do some shuffling.
@@ -51,7 +51,7 @@ void gtk_setup_config_box(struct controlbox *b, int midsession, void *win)
     for (i = 0; i < s->ncontrols; i++) {
         c = s->ctrls[i];
         if (c->generic.type == CTRL_CHECKBOX &&
-            c->generic.context.i == CONF_scrollbar) {
+            c->generic.context.i == offsetof(Config,scrollbar)) {
             /*
              * Control i is the scrollbar checkbox.
              * Control s->ncontrols-1 is the scrollbar-on-left one.
@@ -89,29 +89,29 @@ void gtk_setup_config_box(struct controlbox *b, int midsession, void *win)
                     "Fonts for displaying non-bold text");
     ctrl_fontsel(s, "Font used for ordinary text", 'f',
 		 HELPCTX(no_help),
-		 conf_fontsel_handler, I(CONF_font));
+		 dlg_stdfontsel_handler, I(offsetof(Config,font)));
     ctrl_fontsel(s, "Font used for wide (CJK) text", 'w',
 		 HELPCTX(no_help),
-		 conf_fontsel_handler, I(CONF_widefont));
+		 dlg_stdfontsel_handler, I(offsetof(Config,widefont)));
     s = ctrl_getset(b, "Window/Fonts", "fontbold",
                     "Fonts for displaying bolded text");
     ctrl_fontsel(s, "Font used for bolded text", 'b',
 		 HELPCTX(no_help),
-		 conf_fontsel_handler, I(CONF_boldfont));
+		 dlg_stdfontsel_handler, I(offsetof(Config,boldfont)));
     ctrl_fontsel(s, "Font used for bold wide text", 'i',
 		 HELPCTX(no_help),
-		 conf_fontsel_handler, I(CONF_wideboldfont));
+		 dlg_stdfontsel_handler, I(offsetof(Config,wideboldfont)));
     ctrl_checkbox(s, "Use shadow bold instead of bold fonts", 'u',
 		  HELPCTX(no_help),
-		  conf_checkbox_handler,
-		  I(CONF_shadowbold));
+		  dlg_stdcheckbox_handler,
+		  I(offsetof(Config,shadowbold)));
     ctrl_text(s, "(Note that bold fonts or shadow bolding are only"
 	      " used if you have not requested bolding to be done by"
 	      " changing the text colour.)",
               HELPCTX(no_help));
     ctrl_editbox(s, "Horizontal offset for shadow bold:", 'z', 20,
-		 HELPCTX(no_help), conf_editbox_handler,
-                 I(CONF_shadowboldoffset), I(-1));
+		 HELPCTX(no_help), dlg_stdeditbox_handler,
+                 I(offsetof(Config,shadowboldoffset)), I(-1));
 
     /*
      * Markus Kuhn feels, not totally unreasonably, that it's good
@@ -125,8 +125,8 @@ void gtk_setup_config_box(struct controlbox *b, int midsession, void *win)
 		    "Character set translation on received data");
     ctrl_checkbox(s, "Override with UTF-8 if locale says so", 'l',
 		  HELPCTX(translation_utf8_override),
-		  conf_checkbox_handler,
-		  I(CONF_utf8_override));
+		  dlg_stdcheckbox_handler,
+		  I(offsetof(Config,utf8_override)));
 
     if (!midsession) {
         /*
@@ -137,7 +137,8 @@ void gtk_setup_config_box(struct controlbox *b, int midsession, void *win)
         s = ctrl_getset(b, "Window/Behaviour", "x11",
                         "X Window System settings");
         ctrl_editbox(s, "Window class name:", 'z', 50,
-                     HELPCTX(no_help), conf_editbox_handler,
-                     I(CONF_winclass), I(1));
+                     HELPCTX(no_help), dlg_stdeditbox_handler,
+                     I(offsetof(Config,winclass)),
+                     I(sizeof(((Config *)0)->winclass)));
     }
 }

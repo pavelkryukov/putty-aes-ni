@@ -85,17 +85,15 @@ void gui_enable(char *arg);
  */
 typedef struct RFile RFile;
 typedef struct WFile WFile;
-/* Output params size, perms, mtime and atime can all be NULL if
- * desired. perms will be -1 if the OS does not support POSIX permissions. */
+/* Output params size, mtime and atime can all be NULL if desired */
 RFile *open_existing_file(char *name, uint64 *size,
-			  unsigned long *mtime, unsigned long *atime,
-                          long *perms);
+			  unsigned long *mtime, unsigned long *atime);
 WFile *open_existing_wfile(char *name, uint64 *size);
 /* Returns <0 on error, 0 on eof, or number of bytes read, as usual */
 int read_from_file(RFile *f, void *buffer, int length);
 /* Closes and frees the RFile */
 void close_rfile(RFile *f);
-WFile *open_new_file(char *name, long perms);
+WFile *open_new_file(char *name);
 /* Returns <0 on error, 0 on eof, or number of bytes written, as usual */
 int write_to_file(WFile *f, void *buffer, int length);
 void set_file_times(WFile *f, unsigned long mtime, unsigned long atime);

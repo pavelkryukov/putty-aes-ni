@@ -159,8 +159,10 @@ struct blob {
 };
 static int cmpkeys_ssh2_asymm(void *av, void *bv);
 
+#define PASSPHRASE_MAXLEN 512
+
 struct PassphraseProcStruct {
-    char **passphrase;
+    char *passphrase;
     char *comment;
 };
 
@@ -174,7 +176,7 @@ static void forget_passphrases(void)
 {
     while (count234(passphrases) > 0) {
 	char *pp = index234(passphrases, 0);
-	smemclr(pp, strlen(pp));
+	memset(pp, 0, strlen(pp));
 	delpos234(passphrases, 0);
 	free(pp);
     }
@@ -245,7 +247,7 @@ static HWND passphrase_box;
 static int CALLBACK PassphraseProc(HWND hwnd, UINT msg,
 				   WPARAM wParam, LPARAM lParam)
 {
-    static char **passphrase = NULL;
+    static char *passphrase = NULL;
     struct PassphraseProcStruct *p;
 
     switch (msg) {
@@ -273,9 +275,8 @@ static int CALLBACK PassphraseProc(HWND hwnd, UINT msg,
 	passphrase = p->passphrase;
 	if (p->comment)
 	    SetDlgItemText(hwnd, 101, p->comment);
-        burnstr(*passphrase);
-        *passphrase = dupstr("");
-	SetDlgItemText(hwnd, 102, *passphrase);
+	*passphrase = 0;
+	SetDlgItemText(hwnd, 102, passphrase);
 	return 0;
       case WM_COMMAND:
 	switch (LOWORD(wParam)) {
@@ -290,8 +291,9 @@ static int CALLBACK PassphraseProc(HWND hwnd, UINT msg,
 	    return 0;
 	  case 102:		       /* edit box */
 	    if ((HIWORD(wParam) == EN_CHANGE) && passphrase) {
-                burnstr(*passphrase);
-                *passphrase = GetDlgItemText_alloc(hwnd, 102);
+		GetDlgItemText(hwnd, 102, passphrase,
+			       PASSPHRASE_MAXLEN - 1);
+		passphrase[PASSPHRASE_MAXLEN - 1] = '\0';
 	    }
 	    return 0;
 	}
@@ -383,9 +385,9 @@ static void keylist_update(void)
 /*
  * This function loads a key from a file and adds it.
  */
-static void add_keyfile(Filename *filename)
+static void add_keyfile(Filename filename)
 {
-    char *passphrase;
+    char passphrase[PASSPHRASE_MAXLEN];
     struct RSAKey *rkey = NULL;
     struct ssh2_userkey *skey = NULL;
     int needs_pass;
@@ -393,10 +395,11 @@ static void add_keyfile(Filename *filename)
     int attempts;
     char *comment;
     const char *error = NULL;
+    struct PassphraseProcStruct pps;
     int type;
     int original_pass;
 	
-    type = key_type(filename);
+    type = key_type(&filename);
     if (type != SSH_KEYTYPE_SSH1 && type != SSH_KEYTYPE_SSH2) {
 	char *msg = dupprintf("Couldn't load this key (%s)",
 			      key_type_to_str(type));
@@ -416,7 +419,7 @@ static void add_keyfile(Filename *filename)
 	int i, nkeys, bloblen, keylistlen;
 
 	if (type == SSH_KEYTYPE_SSH1) {
-	    if (!rsakey_pubblob(filename, &blob, &bloblen, NULL, &error)) {
+	    if (!rsakey_pubblob(&filename, &blob, &bloblen, NULL, &error)) {
 		char *msg = dupprintf("Couldn't load private key (%s)", error);
 		message_box(msg, APPNAME, MB_OK | MB_ICONERROR,
 			    HELPCTXID(errors_cantloadkey));
@@ -426,7 +429,7 @@ static void add_keyfile(Filename *filename)
 	    keylist = get_keylist1(&keylistlen);
 	} else {
 	    unsigned char *blob2;
-	    blob = ssh2_userkey_loadpub(filename, NULL, &bloblen,
+	    blob = ssh2_userkey_loadpub(&filename, NULL, &bloblen,
 					NULL, &error);
 	    if (!blob) {
 		char *msg = dupprintf("Couldn't load private key (%s)", error);
@@ -514,30 +517,23 @@ static void add_keyfile(Filename *filename)
 
     error = NULL;
     if (type == SSH_KEYTYPE_SSH1)
-	needs_pass = rsakey_encrypted(filename, &comment);
+	needs_pass = rsakey_encrypted(&filename, &comment);
     else
-	needs_pass = ssh2_userkey_encrypted(filename, &comment);
+	needs_pass = ssh2_userkey_encrypted(&filename, &comment);
     attempts = 0;
     if (type == SSH_KEYTYPE_SSH1)
 	rkey = snew(struct RSAKey);
-    passphrase = NULL;
+    pps.passphrase = passphrase;
+    pps.comment = comment;
     original_pass = 0;
     do {
-        burnstr(passphrase);
-        passphrase = NULL;
-
 	if (needs_pass) {
 	    /* try all the remembered passphrases first */
 	    char *pp = index234(passphrases, attempts);
 	    if(pp) {
-		passphrase = dupstr(pp);
+		strcpy(passphrase, pp);
 	    } else {
 		int dlgret;
-                struct PassphraseProcStruct pps;
-
-                pps.passphrase = &passphrase;
-                pps.comment = comment;
-
 		original_pass = 1;
 		dlgret = DialogBoxParam(hinst, MAKEINTRESOURCE(210),
 					NULL, PassphraseProc, (LPARAM) &pps);
@@ -549,16 +545,13 @@ static void add_keyfile(Filename *filename)
 			sfree(rkey);
 		    return;		       /* operation cancelled */
 		}
-
-                assert(passphrase != NULL);
 	    }
 	} else
-	    passphrase = dupstr("");
-
+	    *passphrase = '\0';
 	if (type == SSH_KEYTYPE_SSH1)
-	    ret = loadrsakey(filename, rkey, passphrase, &error);
+	    ret = loadrsakey(&filename, rkey, passphrase, &error);
 	else {
-	    skey = ssh2_load_userkey(filename, passphrase, &error);
+	    skey = ssh2_load_userkey(&filename, passphrase, &error);
 	    if (skey == SSH2_WRONG_PASSPHRASE)
 		ret = -1;
 	    else if (!skey)
@@ -569,14 +562,11 @@ static void add_keyfile(Filename *filename)
 	attempts++;
     } while (ret == -1);
 
+    /* if they typed in an ok passphrase, remember it */
     if(original_pass && ret) {
-        /* If they typed in an ok passphrase, remember it */
-	addpos234(passphrases, passphrase, 0);
-    } else {
-        /* Otherwise, destroy it */
-        burnstr(passphrase);
+	char *pp = dupstr(passphrase);
+	addpos234(passphrases, pp, 0);
     }
-    passphrase = NULL;
 
     if (comment)
 	sfree(comment);
@@ -968,7 +958,7 @@ static void answer_msg(void *msg)
 	    MD5Init(&md5c);
 	    MD5Update(&md5c, response_source, 48);
 	    MD5Final(response_md5, &md5c);
-	    smemclr(response_source, 48);	/* burn the evidence */
+	    memset(response_source, 0, 48);	/* burn the evidence */
 	    freebn(response);	       /* and that evidence */
 	    freebn(challenge);	       /* yes, and that evidence */
 	    freebn(reqkey.exponent);   /* and free some memory ... */
@@ -1694,53 +1684,6 @@ static void update_sessions(void)
     }
 }
 
-#ifndef NO_SECURITY
-/*
- * Versions of Pageant prior to 0.61 expected this SID on incoming
- * communications. For backwards compatibility, and more particularly
- * for compatibility with derived works of PuTTY still using the old
- * Pageant client code, we accept it as an alternative to the one
- * returned from get_user_sid() in winpgntc.c.
- */
-PSID get_default_sid(void)
-{
-    HANDLE proc = NULL;
-    DWORD sidlen;
-    PSECURITY_DESCRIPTOR psd = NULL;
-    PSID sid = NULL, copy = NULL, ret = NULL;
-
-    if ((proc = OpenProcess(MAXIMUM_ALLOWED, FALSE,
-                            GetCurrentProcessId())) == NULL)
-        goto cleanup;
-
-    if (p_GetSecurityInfo(proc, SE_KERNEL_OBJECT, OWNER_SECURITY_INFORMATION,
-                          &sid, NULL, NULL, NULL, &psd) != ERROR_SUCCESS)
-        goto cleanup;
-
-    sidlen = GetLengthSid(sid);
-
-    copy = (PSID)smalloc(sidlen);
-
-    if (!CopySid(sidlen, copy, sid))
-        goto cleanup;
-
-    /* Success. Move sid into the return value slot, and null it out
-     * to stop the cleanup code freeing it. */
-    ret = copy;
-    copy = NULL;
-
-  cleanup:
-    if (proc != NULL)
-        CloseHandle(proc);
-    if (psd != NULL)
-        LocalFree(psd);
-    if (copy != NULL)
-        sfree(copy);
-
-    return ret;
-}
-#endif
-
 static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 				WPARAM wParam, LPARAM lParam)
 {
@@ -1878,9 +1821,9 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 	    void *p;
 	    HANDLE filemap;
 #ifndef NO_SECURITY
-	    PSID mapowner, ourself, ourself2;
+	    PSID mapowner, ourself;
+	    PSECURITY_DESCRIPTOR psd1 = NULL, psd2 = NULL;
 #endif
-            PSECURITY_DESCRIPTOR psd = NULL;
 	    int ret = 0;
 
 	    cds = (COPYDATASTRUCT *) lParam;
@@ -1907,17 +1850,10 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 			return 0;
                     }
 
-                    if ((ourself2 = get_default_sid()) == NULL) {
-#ifdef DEBUG_IPC
-			debug(("couldn't get default SID\n"));
-#endif
-			return 0;
-                    }
-
 		    if ((rc = p_GetSecurityInfo(filemap, SE_KERNEL_OBJECT,
 						OWNER_SECURITY_INFORMATION,
 						&mapowner, NULL, NULL, NULL,
-						&psd) != ERROR_SUCCESS)) {
+						&psd1) != ERROR_SUCCESS)) {
 #ifdef DEBUG_IPC
 			debug(("couldn't get owner info for filemap: %d\n",
                                rc));
@@ -1926,28 +1862,22 @@ static LRESULT CALLBACK WndProc(HWND hwnd, UINT message,
 		    }
 #ifdef DEBUG_IPC
                     {
-                        LPTSTR ours, ours2, theirs;
+                        LPTSTR ours, theirs;
                         ConvertSidToStringSid(mapowner, &theirs);
                         ConvertSidToStringSid(ourself, &ours);
-                        ConvertSidToStringSid(ourself2, &ours2);
-                        debug(("got sids:\n  oursnew=%s\n  oursold=%s\n"
-                               "  theirs=%s\n", ours, ours2, theirs));
+                        debug(("got both sids: ours=%s theirs=%s\n",
+                               ours, theirs));
                         LocalFree(ours);
-                        LocalFree(ours2);
                         LocalFree(theirs);
                     }
 #endif
-		    if (!EqualSid(mapowner, ourself) &&
-                        !EqualSid(mapowner, ourself2)) {
-                        CloseHandle(filemap);
+		    if (!EqualSid(mapowner, ourself))
 			return 0;      /* security ID mismatch! */
-                    }
 #ifdef DEBUG_IPC
 		    debug(("security stuff matched\n"));
 #endif
-                    LocalFree(psd);
-                    sfree(ourself);
-                    sfree(ourself2);
+		    LocalFree(psd1);
+		    LocalFree(psd2);
 		} else {
 #ifdef DEBUG_IPC
 		    debug(("security APIs not present\n"));

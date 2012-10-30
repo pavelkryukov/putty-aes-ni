@@ -11,7 +11,7 @@
 
 #include "putty.h"
 
-unsigned long schedule_timer(int ticks, timer_fn_t fn, void *ctx)
+long schedule_timer(int ticks, timer_fn_t fn, void *ctx)
 {
     return 0;
 }

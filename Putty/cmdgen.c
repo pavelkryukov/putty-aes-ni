@@ -118,7 +118,10 @@ void sk_cleanup(void)
 
 void showversion(void)
 {
-    printf("puttygen: %s\n", ver);
+    char *verstr = dupstr(ver);
+    verstr[0] = tolower((unsigned char)verstr[0]);
+    printf("PuTTYgen %s\n", verstr);
+    sfree(verstr);
 }
 
 void usage(int standalone)
@@ -254,11 +257,12 @@ static char *blobfp(char *alg, int bits, unsigned char *blob, int bloblen)
 int main(int argc, char **argv)
 {
     char *infile = NULL;
-    Filename *infilename = NULL, *outfilename = NULL;
+    Filename infilename;
     enum { NOKEYGEN, RSA1, RSA2, DSA } keytype = NOKEYGEN;    
     char *outfile = NULL, *outfiletmp = NULL;
+    Filename outfilename;
     enum { PRIVATE, PUBLIC, PUBLICO, FP, OPENSSH, SSHCOM } outtype = PRIVATE;
-    int bits = 2048;
+    int bits = 1024;
     char *comment = NULL, *origcomment = NULL;
     int change_passphrase = FALSE;
     int errs = FALSE, nogo = FALSE;
@@ -532,7 +536,7 @@ int main(int argc, char **argv)
     if (infile) {
 	infilename = filename_from_str(infile);
 
-	intype = key_type(infilename);
+	intype = key_type(&infilename);
 
 	switch (intype) {
 	    /*
@@ -664,7 +668,7 @@ int main(int argc, char **argv)
 	    return 1;
 	}
 	random_add_heavynoise(entropy, bits / 8);
-	smemclr(entropy, bits/8);
+	memset(entropy, 0, bits/8);
 	sfree(entropy);
 
 	if (keytype == DSA) {
@@ -703,11 +707,11 @@ int main(int argc, char **argv)
 	 * Find out whether the input key is encrypted.
 	 */
 	if (intype == SSH_KEYTYPE_SSH1)
-	    encrypted = rsakey_encrypted(infilename, &origcomment);
+	    encrypted = rsakey_encrypted(&infilename, &origcomment);
 	else if (intype == SSH_KEYTYPE_SSH2)
-	    encrypted = ssh2_userkey_encrypted(infilename, &origcomment);
+	    encrypted = ssh2_userkey_encrypted(&infilename, &origcomment);
 	else
-	    encrypted = import_encrypted(infilename, intype, &origcomment);
+	    encrypted = import_encrypted(&infilename, intype, &origcomment);
 
 	/*
 	 * If so, ask for a passphrase.
@@ -717,7 +721,7 @@ int main(int argc, char **argv)
 	    int ret;
 	    p->to_server = FALSE;
 	    p->name = dupstr("SSH key passphrase");
-	    add_prompt(p, dupstr("Enter passphrase to load key: "), FALSE);
+	    add_prompt(p, dupstr("Enter passphrase to load key: "), FALSE, 512);
 	    ret = console_get_userpass_input(p, NULL, 0);
 	    assert(ret >= 0);
 	    if (!ret) {
@@ -742,7 +746,7 @@ int main(int argc, char **argv)
 		unsigned char *blob;
 		int n, l, bloblen;
 
-		ret = rsakey_pubblob(infilename, &vblob, &bloblen,
+		ret = rsakey_pubblob(&infilename, &vblob, &bloblen,
 				     &origcomment, &error);
 		blob = (unsigned char *)vblob;
 
@@ -764,7 +768,7 @@ int main(int argc, char **argv)
 		ssh1key->comment = dupstr(origcomment);
 		ssh1key->private_exponent = NULL;
 	    } else {
-		ret = loadrsakey(infilename, ssh1key, passphrase, &error);
+		ret = loadrsakey(&infilename, ssh1key, passphrase, &error);
 	    }
 	    if (ret > 0)
 		error = NULL;
@@ -774,7 +778,7 @@ int main(int argc, char **argv)
 
 	  case SSH_KEYTYPE_SSH2:
 	    if (!load_encrypted) {
-		ssh2blob = ssh2_userkey_loadpub(infilename, &ssh2alg,
+		ssh2blob = ssh2_userkey_loadpub(&infilename, &ssh2alg,
 						&ssh2bloblen, NULL, &error);
 		ssh2algf = find_pubkey_alg(ssh2alg);
 		if (ssh2algf)
@@ -782,7 +786,7 @@ int main(int argc, char **argv)
 		else
 		    bits = -1;
 	    } else {
-		ssh2key = ssh2_load_userkey(infilename, passphrase, &error);
+		ssh2key = ssh2_load_userkey(&infilename, passphrase, &error);
 	    }
 	    if ((ssh2key && ssh2key != SSH2_WRONG_PASSPHRASE) || ssh2blob)
 		error = NULL;
@@ -796,7 +800,7 @@ int main(int argc, char **argv)
 
 	  case SSH_KEYTYPE_OPENSSH:
 	  case SSH_KEYTYPE_SSHCOM:
-	    ssh2key = import_ssh2(infilename, intype, passphrase, &error);
+	    ssh2key = import_ssh2(&infilename, intype, passphrase, &error);
 	    if (ssh2key) {
 		if (ssh2key != SSH2_WRONG_PASSPHRASE)
 		    error = NULL;
@@ -842,8 +846,8 @@ int main(int argc, char **argv)
 
 	p->to_server = FALSE;
 	p->name = dupstr("New SSH key passphrase");
-	add_prompt(p, dupstr("Enter passphrase to save key: "), FALSE);
-	add_prompt(p, dupstr("Re-enter passphrase to verify: "), FALSE);
+	add_prompt(p, dupstr("Enter passphrase to save key: "), FALSE, 512);
+	add_prompt(p, dupstr("Re-enter passphrase to verify: "), FALSE, 512);
 	ret = console_get_userpass_input(p, NULL, 0);
 	assert(ret >= 0);
 	if (!ret) {
@@ -857,7 +861,7 @@ int main(int argc, char **argv)
 		return 1;
 	    }
 	    if (passphrase) {
-		smemclr(passphrase, strlen(passphrase));
+		memset(passphrase, 0, strlen(passphrase));
 		sfree(passphrase);
 	    }
 	    passphrase = dupstr(p->prompts[0]->result);
@@ -888,14 +892,14 @@ int main(int argc, char **argv)
       case PRIVATE:
 	if (sshver == 1) {
 	    assert(ssh1key);
-	    ret = saversakey(outfilename, ssh1key, passphrase);
+	    ret = saversakey(&outfilename, ssh1key, passphrase);
 	    if (!ret) {
 		fprintf(stderr, "puttygen: unable to save SSH-1 private key\n");
 		return 1;
 	    }
 	} else {
 	    assert(ssh2key);
-	    ret = ssh2_save_userkey(outfilename, ssh2key, passphrase);
+	    ret = ssh2_save_userkey(&outfilename, ssh2key, passphrase);
  	    if (!ret) {
 		fprintf(stderr, "puttygen: unable to save SSH-2 private key\n");
 		return 1;
@@ -1019,7 +1023,7 @@ int main(int argc, char **argv)
       case SSHCOM:
 	assert(sshver == 2);
 	assert(ssh2key);
-	ret = export_ssh2(outfilename, outtype, ssh2key, passphrase);
+	ret = export_ssh2(&outfilename, outtype, ssh2key, passphrase);
 	if (!ret) {
 	    fprintf(stderr, "puttygen: unable to export key\n");
 	    return 1;
@@ -1032,7 +1036,7 @@ int main(int argc, char **argv)
     }
 
     if (passphrase) {
-	smemclr(passphrase, strlen(passphrase));
+	memset(passphrase, 0, strlen(passphrase));
 	sfree(passphrase);
     }
 

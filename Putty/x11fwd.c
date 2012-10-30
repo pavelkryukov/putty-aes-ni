@@ -68,7 +68,8 @@ static const struct plug_function_table dummy_plug = {
     dummy_plug_sent, dummy_plug_accepting
 };
 
-struct X11Display *x11_setup_display(char *display, int authtype, Conf *conf)
+struct X11Display *x11_setup_display(char *display, int authtype,
+				     const Config *cfg)
 {
     struct X11Display *disp = snew(struct X11Display);
     char *localcopy;
@@ -165,7 +166,7 @@ struct X11Display *x11_setup_display(char *display, int authtype, Conf *conf)
 
 	disp->port = 6000 + disp->displaynum;
 	disp->addr = name_lookup(disp->hostname, disp->port,
-				 &disp->realhost, conf, ADDRTYPE_UNSPEC);
+				 &disp->realhost, cfg, ADDRTYPE_UNSPEC);
     
 	if ((err = sk_addr_error(disp->addr)) != NULL) {
 	    sk_addr_free(disp->addr);
@@ -248,7 +249,7 @@ struct X11Display *x11_setup_display(char *display, int authtype, Conf *conf)
     disp->localauthproto = X11_NO_AUTH;
     disp->localauthdata = NULL;
     disp->localauthdatalen = 0;
-    platform_get_x11_auth(disp, conf);
+    platform_get_x11_auth(disp, cfg);
 
     return disp;
 }
@@ -264,10 +265,10 @@ void x11_free_display(struct X11Display *disp)
     sfree(disp->hostname);
     sfree(disp->unixsocketpath);
     if (disp->localauthdata)
-	smemclr(disp->localauthdata, disp->localauthdatalen);
+	memset(disp->localauthdata, 0, disp->localauthdatalen);
     sfree(disp->localauthdata);
     if (disp->remoteauthdata)
-	smemclr(disp->remoteauthdata, disp->remoteauthdatalen);
+	memset(disp->remoteauthdata, 0, disp->remoteauthdatalen);
     sfree(disp->remoteauthdata);
     sfree(disp->remoteauthprotoname);
     sfree(disp->remoteauthdatastring);
@@ -487,7 +488,7 @@ void x11_get_auth_from_authfile(struct X11Display *disp,
 
     done:
     fclose(authfp);
-    smemclr(buf, 65537 * 4);
+    memset(buf, 0, 65537 * 4);
     sfree(buf);
     sfree(ourhostname);
 }
@@ -503,20 +504,13 @@ static int x11_closing(Plug plug, const char *error_msg, int error_code,
 {
     struct X11Private *pr = (struct X11Private *) plug;
 
-    if (error_msg) {
-        /*
-         * Socket error. Slam the connection instantly shut.
-         */
-        sshfwd_unclean_close(pr->c);
-    } else {
-        /*
-         * Ordinary EOF received on socket. Send an EOF on the SSH
-         * channel.
-         */
-        if (pr->c)
-            sshfwd_write_eof(pr->c);
-    }
-
+    /*
+     * We have no way to communicate down the forwarded connection,
+     * so if an error occurred on the socket, we just ignore it
+     * and treat it like a proper close.
+     */
+    sshfwd_close(pr->c);
+    x11_close(pr->s);
     return 1;
 }
 
@@ -564,7 +558,8 @@ int x11_get_screen_number(char *display)
  * also, fills the SocketsStructure
  */
 extern const char *x11_init(Socket *s, struct X11Display *disp, void *c,
-			    const char *peeraddr, int peerport, Conf *conf)
+			    const char *peeraddr, int peerport,
+			    const Config *cfg)
 {
     static const struct plug_function_table fn_table = {
 	x11_log,
@@ -591,7 +586,7 @@ extern const char *x11_init(Socket *s, struct X11Display *disp, void *c,
 
     pr->s = *s = new_connection(sk_addr_dup(disp->addr),
 				disp->realhost, disp->port,
-				0, 1, 0, 0, (Plug) pr, conf);
+				0, 1, 0, 0, (Plug) pr, cfg);
     if ((err = sk_socket_error(*s)) != NULL) {
 	sfree(pr);
 	return err;
@@ -728,7 +723,8 @@ int x11_send(Socket s, char *data, int len)
 	    memset(reply + 8, 0, msgsize);
 	    memcpy(reply + 8, message, msglen);
 	    sshfwd_write(pr->c, (char *)reply, 8 + msgsize);
-	    sshfwd_write_eof(pr->c);
+	    sshfwd_close(pr->c);
+	    x11_close(s);
 	    sfree(reply);
 	    sfree(message);
 	    return 0;
@@ -792,9 +788,4 @@ int x11_send(Socket s, char *data, int len)
      */
 
     return sk_write(s, data, len);
-}
-
-void x11_send_eof(Socket s)
-{
-    sk_write_eof(s);
 }
