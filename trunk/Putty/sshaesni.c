@@ -224,8 +224,7 @@ static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key)
 static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 {
     __m128i *keysched, *invkeysched;
-    unsigned int unalignment = (size_t)ctx % 16;
-    ctx->offset = 16 - unalignment;
+    ctx->offset = 16 - ((size_t)ctx % 16);
     keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
     invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
 
