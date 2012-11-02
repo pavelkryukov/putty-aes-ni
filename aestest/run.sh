@@ -12,23 +12,23 @@
 
 if [ "$1" = "-p" ];
 then
-    echo "Perfomance mode enabled"
+    echo "[check] Perfomance mode enabled"
     SEEDS="5"
 else
     SEEDS="50"
 fi
 
 mkdir obj bin txt -p
-make bin/cpuid
+make bin/cpuid -s
 
-echo -n "Checking for AES-NI support... "
+echo -n "[check] AES-NI support... "
 if ./bin/cpuid -q ;
 then
     echo "found"
     SDE=""
 else
     echo "not found"
-    echo -n "Checking for SDE... "
+    echo -n "[check] SDE... "
     
     if [ ! `which sde` ];
         then
@@ -40,9 +40,8 @@ else
         fi
 fi
 
-make txt/test-original-$SEEDS.txt txt/test-output-$SEEDS.txt SDE=$SDE
+make txt/test-original-$SEEDS.txt txt/test-output-$SEEDS.txt SDE=$SDE -s
 
-echo "MD5 check..."
 original=$(md5sum txt/test-original-$SEEDS.txt | cut -d ' ' -f 1)
 changed=$(md5sum txt/test-output-$SEEDS.txt | cut -d ' ' -f 1)
 
@@ -59,4 +58,4 @@ then
     exit
 fi
 
-make txt/perf-original.sorted.txt txt/perf-output.sorted.txt SDE=$SDE
+make txt/perf-original.sorted.txt txt/perf-output.sorted.txt SDE=$SDE -s
