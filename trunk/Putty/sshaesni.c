@@ -223,10 +223,11 @@ static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key)
  */
 static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 {
+    __m128i *keysched, *invkeysched;
     unsigned int unalignment = (size_t)ctx % 16;
-    ctx->offset = unalignment ? 16 - unalignment : 0;
-    __m128i *keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
-    __m128i *invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
+    ctx->offset = 16 - unalignment;
+    keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+    invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
 
     ctx->Nr = 6 + (keylen / 4); /* Number of rounds */
     invkeysched += ctx->Nr;
