@@ -1,7 +1,7 @@
 # Makefile for unit tests
 #
 # @author kryukov@frtk.ru
-# @version 4.0
+# @version 4.1
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
@@ -31,7 +31,10 @@ $(BIN_DIR)/sshaes-%: $(OBJ_DIR)/sshaes.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttymem.o
 $(BIN_DIR)/sshaesni-%: $(OBJ_DIR)/sshaesni.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttymem.o
 	$(CC) $(LDFLAGS) $^ -o $@
 
-$(OBJ_DIR)/sshae%.o: $(PUTTY)/sshae%.c
+$(OBJ_DIR)/sshaes.o: $(PUTTY)/sshaes.c
+	$(CC) $(CFLAGS) $^ -c -o $@ -I $(PUTTY) -D_FORCE_SOFTWARE_AES
+    
+$(OBJ_DIR)/sshaesni.o: $(PUTTY)/sshaes.c
 	$(CC) $(CFLAGS) $^ -c -o $@ -I $(PUTTY)
     
 $(OBJ_DIR)/aesdemo-decode.o: $(SRC_DIR)/aesdemo.c

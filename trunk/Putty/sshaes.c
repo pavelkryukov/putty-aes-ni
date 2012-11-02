@@ -1,52 +1,316 @@
-/*
- * aes.c - implementation of AES / Rijndael
- * 
- * AES is a flexible algorithm as regards endianness: it has no
- * inherent preference as to which way round you should form words
- * from the input byte stream. It talks endlessly of four-byte
- * _vectors_, but never of 32-bit _words_ - there's no 32-bit
- * addition at all, which would force an endianness by means of
- * which way the carries went. So it would be possible to write a
- * working AES that read words big-endian, and another working one
- * that read them little-endian, just by computing a different set
- * of tables - with no speed drop.
- * 
- * It's therefore tempting to do just that, and remove the overhead
- * of GET_32BIT_MSB_FIRST() et al, allowing every system to use its
- * own endianness-native code; but I decided not to, partly for
- * ease of testing, and mostly because I like the flexibility that
- * allows you to encrypt a non-word-aligned block of memory (which
- * many systems would stop being able to do if I went the
- * endianness-dependent route).
- * 
- * This implementation reads and stores words big-endian, but
- * that's a minor implementation detail. By flipping the endianness
- * of everything in the E0..E3, D0..D3 tables, and substituting
- * GET_32BIT_LSB_FIRST for GET_32BIT_MSB_FIRST, I could create an
- * implementation that worked internally little-endian and gave the
- * same answers at the same speed.
+/**
+ * sshaes.c
+ *
+ * Implementation of AES for PuTTY using AES-NI
+ * instuction set expansion.
+ *
+ * @author Pavel Kryukov <kryukov@frtk.ru>
+ * @author Maxim Kuznetsov <maks.kuznetsov@gmail.com>
+ * @author Svyatoslav Kuzmich <svatoslav1@gmail.com>
+ * Based on sshaes.c source file of PuTTY
+ *
+ * For Putty AES NI project
+ * http://putty-aes-ni.googlecode.com/
  */
 
+/*
+ * Check of compiler version
+ */
+#ifdef _FORCE_AES_NI
+#   define GOODCOMPILER
+#endif
+
+#if defined(__GNUC__)
+#    if (__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 4))
+#       define GOODCOMPILER
+#    endif
+#elif defined (_MSC_VER)
+#   if _MSC_FULL_VER >= 150030729
+#      define GOODCOMPILER
+#   endif
+#endif
+
+#ifdef _FORCE_SOFTWARE_AES
+#   undef GOODCOMPILER
+#endif
+
+/*
+ * Include section
+ */
 #include <assert.h>
 #include <stdlib.h>
+
+#ifdef GOODCOMPILER
+#  include <wmmintrin.h>
+#  include <smmintrin.h>
+#endif
 
 #include "ssh.h"
 
 #define MAX_NR 14   /* max no of rounds */
 #define NB 4        /* no of words in cipher blk */
 
-#define mulby2(x) ( ((x&0x7F) << 1) ^ (x & 0x80 ? 0x1B : 0) )
-
+/*
+ * Pseudo-class AESContext
+ */
 typedef struct AESContext AESContext;
 
 struct AESContext {
     word32 keysched[(MAX_NR + 2) * NB];
     word32 invkeysched[(MAX_NR + 2) * NB];
     word32 iv[NB];
-    unsigned int Nr;
+    unsigned int Nr; /* number of rounds */
     unsigned int offset; /* offset for aligned key expansion */
+    void (*encrypt)(unsigned char*, int, AESContext*);
+    void (*decrypt)(unsigned char*, int, AESContext*);
+    void (*sdctr)(unsigned char*, int, AESContext*);
+    int isNI;
 };
 
+static void aes_encrypt_cbc_sw(unsigned char*, int, AESContext*);
+static void aes_decrypt_cbc_sw(unsigned char*, int, AESContext*);
+static void aes_sdctr_sw(unsigned char*, int, AESContext*);
+
+#ifdef GOODCOMPILER
+static void aes_encrypt_cbc_ni(unsigned char*, int, AESContext*);
+static void aes_decrypt_cbc_ni(unsigned char*, int, AESContext*);
+static void aes_sdctr_ni(unsigned char*, int, AESContext*);
+#endif
+
+static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
+{
+    ctx->encrypt(blk, len, ctx);
+}
+
+static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
+{
+    ctx->decrypt(blk, len, ctx);
+}
+
+static void aes_sdctr(unsigned char *blk, int len, AESContext * ctx)
+{
+    ctx->sdctr(blk, len, ctx);
+}
+
+/*
+ * Determinators of CPU type
+ */
+#if defined(__GNUC__) && defined(GOODCOMPILER)
+static void __cpuid(unsigned int* CPUInfo, int func)
+{
+    __asm__ __volatile__
+    (
+        "cpuid"
+        : "=a" (CPUInfo[0])
+        , "=b" (CPUInfo[1])
+        , "=c" (CPUInfo[2])
+        , "=d" (CPUInfo[3])
+        : "a"  (func)
+    );
+}
+#endif
+
+static int supports_aes_ni()
+{
+#ifndef GOODCOMPILER
+    return 0;
+#else
+    unsigned int CPUInfo[4];
+    __cpuid(CPUInfo, 1);
+    return CPUInfo[2] & (1 << 25);
+#endif
+}
+
+/*
+ * AES-NI key expansion helpers
+ */
+#ifdef GOODCOMPILER
+static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
+{
+    __m128i temp3;
+    temp2 = _mm_shuffle_epi32 (temp2 ,0xff);
+    temp3 = _mm_slli_si128 (temp1, 0x4);
+    temp1 = _mm_xor_si128 (temp1, temp3);
+    temp3 = _mm_slli_si128 (temp3, 0x4);
+    temp1 = _mm_xor_si128 (temp1, temp3);
+    temp3 = _mm_slli_si128 (temp3, 0x4);
+    temp1 = _mm_xor_si128 (temp1, temp3);
+    temp1 = _mm_xor_si128 (temp1, temp2);
+    return temp1;
+}
+
+static void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * temp3)
+{
+    __m128i temp4;
+    *temp2 = _mm_shuffle_epi32 (*temp2, 0x55);
+    temp4 = _mm_slli_si128 (*temp1, 0x4);
+    *temp1 = _mm_xor_si128 (*temp1, temp4);
+    temp4 = _mm_slli_si128 (temp4, 0x4);
+    *temp1 = _mm_xor_si128 (*temp1, temp4);
+    temp4 = _mm_slli_si128 (temp4, 0x4);
+    *temp1 = _mm_xor_si128 (*temp1, temp4);
+    *temp1 = _mm_xor_si128 (*temp1, *temp2);
+    *temp2 = _mm_shuffle_epi32(*temp1, 0xff);
+    temp4 = _mm_slli_si128 (*temp3, 0x4);
+    *temp3 = _mm_xor_si128 (*temp3, temp4);
+    *temp3 = _mm_xor_si128 (*temp3, *temp2);
+}
+
+static void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2)
+{
+    __m128i temp4;
+    *temp2 = _mm_shuffle_epi32(*temp2, 0xff);
+    temp4 = _mm_slli_si128 (*temp1, 0x4);
+    *temp1 = _mm_xor_si128 (*temp1, temp4);
+    temp4 = _mm_slli_si128 (temp4, 0x4);
+    *temp1 = _mm_xor_si128 (*temp1, temp4);
+    temp4 = _mm_slli_si128 (temp4, 0x4);
+    *temp1 = _mm_xor_si128 (*temp1, temp4);
+    *temp1 = _mm_xor_si128 (*temp1, *temp2);
+}
+
+static void KEY_256_ASSIST_2(__m128i* temp1, __m128i * temp3)
+{
+    __m128i temp2,temp4;
+    temp4 = _mm_aeskeygenassist_si128 (*temp1, 0x0);
+    temp2 = _mm_shuffle_epi32(temp4, 0xaa);
+    temp4 = _mm_slli_si128 (*temp3, 0x4);
+    *temp3 = _mm_xor_si128 (*temp3, temp4);
+    temp4 = _mm_slli_si128 (temp4, 0x4);
+    *temp3 = _mm_xor_si128 (*temp3, temp4);
+    temp4 = _mm_slli_si128 (temp4, 0x4);
+    *temp3 = _mm_xor_si128 (*temp3, temp4);
+    *temp3 = _mm_xor_si128 (*temp3, temp2);
+}
+
+static void AES_128_Key_Expansion (unsigned char *userkey, __m128i *key)
+{
+    __m128i temp1, temp2;
+    temp1 = _mm_loadu_si128((__m128i*)userkey);
+    key[0] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1 ,0x1);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[1] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x2);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[2] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x4);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[3] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x8);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[4] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x10);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[5] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x20);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[6] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x40);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[7] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x80);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[8] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x1b);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[9] = temp1;
+    temp2 = _mm_aeskeygenassist_si128 (temp1,0x36);
+    temp1 = AES_128_ASSIST(temp1, temp2);
+    key[10] = temp1;
+}
+
+static void AES_192_Key_Expansion (unsigned char *userkey, __m128i *key)
+{
+    __m128i temp1, temp2, temp3;
+    temp1 = _mm_loadu_si128((__m128i*)userkey);
+    temp3 = _mm_loadu_si128((__m128i*)(userkey+16));
+    key[0]=temp1;
+    key[1]=temp3;
+    temp2=_mm_aeskeygenassist_si128 (temp3,0x1);
+    KEY_192_ASSIST(&temp1, &temp2, &temp3);
+    key[1] = (__m128i)_mm_shuffle_pd((__m128d)key[1],
+            (__m128d)temp1,0);
+    key[2] = (__m128i)_mm_shuffle_pd((__m128d)temp1,(__m128d)temp3,1);
+    temp2=_mm_aeskeygenassist_si128 (temp3,0x2);
+    KEY_192_ASSIST(&temp1, &temp2, &temp3);
+    key[3]=temp1;
+    key[4]=temp3;
+    temp2=_mm_aeskeygenassist_si128 (temp3,0x4);
+    KEY_192_ASSIST(&temp1, &temp2, &temp3);
+    key[4] = (__m128i)_mm_shuffle_pd((__m128d)key[4],
+            (__m128d)temp1,0);
+    key[5] = (__m128i)_mm_shuffle_pd((__m128d)temp1,(__m128d)temp3,1);
+    temp2=_mm_aeskeygenassist_si128 (temp3,0x8);
+    KEY_192_ASSIST(&temp1, &temp2, &temp3);
+    key[6]=temp1;
+    key[7]=temp3;
+    temp2=_mm_aeskeygenassist_si128 (temp3,0x10);
+    KEY_192_ASSIST(&temp1, &temp2, &temp3);
+    key[7] = (__m128i)_mm_shuffle_pd((__m128d)key[7],
+            (__m128d)temp1,0);
+    key[8] = (__m128i)_mm_shuffle_pd((__m128d)temp1,(__m128d)temp3,1);
+    temp2=_mm_aeskeygenassist_si128 (temp3,0x20);
+    KEY_192_ASSIST(&temp1, &temp2, &temp3);
+    key[9]=temp1;
+    key[10]=temp3;
+    temp2=_mm_aeskeygenassist_si128 (temp3,0x40);
+    KEY_192_ASSIST(&temp1, &temp2, &temp3);
+    key[10] = (__m128i)_mm_shuffle_pd((__m128d)key[10],
+            (__m128d)temp1,0);
+    key[11] = (__m128i)_mm_shuffle_pd((__m128d)temp1,(__m128d)temp3,1);
+    temp2=_mm_aeskeygenassist_si128 (temp3,0x80);
+    KEY_192_ASSIST(&temp1, &temp2, &temp3);
+    key[12]=temp1;
+    key[13]=temp3;
+}
+
+static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key)
+{
+    __m128i temp1, temp2, temp3;
+    temp1 = _mm_loadu_si128((__m128i*)userkey);
+    temp3 = _mm_loadu_si128((__m128i*)(userkey+16));
+    key[0] = temp1;
+    key[1] = temp3;
+    temp2 = _mm_aeskeygenassist_si128 (temp3,0x01);
+    KEY_256_ASSIST_1(&temp1, &temp2);
+    key[2]=temp1;
+    KEY_256_ASSIST_2(&temp1, &temp3);
+    key[3]=temp3;
+    temp2 = _mm_aeskeygenassist_si128 (temp3,0x02);
+    KEY_256_ASSIST_1(&temp1, &temp2);
+    key[4]=temp1;
+    KEY_256_ASSIST_2(&temp1, &temp3);
+    key[5]=temp3;
+    temp2 = _mm_aeskeygenassist_si128 (temp3,0x04);
+    KEY_256_ASSIST_1(&temp1, &temp2);
+    key[6]=temp1;
+    KEY_256_ASSIST_2(&temp1, &temp3);
+    key[7]=temp3;
+    temp2 = _mm_aeskeygenassist_si128 (temp3,0x08);
+    KEY_256_ASSIST_1(&temp1, &temp2);
+    key[8]=temp1;
+    KEY_256_ASSIST_2(&temp1, &temp3);
+    key[9]=temp3;
+    temp2 = _mm_aeskeygenassist_si128 (temp3,0x10);
+    KEY_256_ASSIST_1(&temp1, &temp2);
+    key[10]=temp1;
+    KEY_256_ASSIST_2(&temp1, &temp3);
+    key[11]=temp3;
+    temp2 = _mm_aeskeygenassist_si128 (temp3,0x20);
+    KEY_256_ASSIST_1(&temp1, &temp2);
+    key[12]=temp1;
+    KEY_256_ASSIST_2(&temp1, &temp3);
+    key[13]=temp3;
+    temp2 = _mm_aeskeygenassist_si128 (temp3,0x40);
+    KEY_256_ASSIST_1(&temp1, &temp2);
+    key[14]=temp1;
+}
+#endif /* GOODCOMPILER */
+
+/*
+ * SW AES lookup tables
+ */
 static const unsigned char Sbox[256] = {
     0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5,
     0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76,
@@ -646,89 +910,329 @@ static const word32 D3[256] = {
     0xcb84617b, 0x32b670d5, 0x6c5c7448, 0xb85742d0,
 };
 
+/*
+ * SW AES macros
+ */
 #define ADD_ROUND_KEY (block[0]^=*keysched++, block[1]^=*keysched++, \
 		         block[2]^=*keysched++, block[3]^=*keysched++)
 #define MOVEWORD(i) ( block[i] = newstate[i] )
+#define mulby2(x) ( ((x&0x7F) << 1) ^ (x & 0x80 ? 0x1B : 0) )
+
 /*
- * Set up an AESContext. `keylen' and `blocklen' are measured in
- * bytes; each can be either 16 (128-bit), 24 (192-bit), or 32
+ * Set up an AESContext. `keylen' is measured in
+ * bytes; it can be either 16 (128-bit), 24 (192-bit), or 32
  * (256-bit).
  */
 static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 {
-    int i, j, Nk, rconst;
+    ctx->Nr = 6 + (keylen / 4); /* Number of rounds */
+    ctx->offset = 16 - ((size_t)ctx % 16);
 
-    assert(keylen == 16 || keylen == 24 || keylen == 32);
+    if (supports_aes_ni())
+    {
+#ifdef GOODCOMPILER
+        __m128i *keysched, *invkeysched;
+        keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+        invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
+        invkeysched += ctx->Nr;
 
-    /*
-     * Basic parameters. Words per block, words in key, rounds.
-     */
-    Nk = keylen / 4;
-    ctx->Nr = 6 + Nk;
+        ctx->encrypt = &aes_encrypt_cbc_ni;
+        ctx->decrypt = &aes_decrypt_cbc_ni;
+        ctx->sdctr = &aes_sdctr_ni;
+        ctx->isNI = 1;
 
-    /*
-     * Now do the key setup itself.
-     */
-    rconst = 1;
-    for (i = 0; i < (ctx->Nr + 1) * 4; i++) {
-        if (i < Nk)
-            ctx->keysched[i] = GET_32BIT_MSB_FIRST(key + 4 * i);
-        else {
-            word32 temp = ctx->keysched[i - 1];
-            if (i % Nk == 0) {
-                int a, b, c, d;
-                a = (temp >> 16) & 0xFF;
-                b = (temp >> 8) & 0xFF;
-                c = (temp >> 0) & 0xFF;
-                d = (temp >> 24) & 0xFF;
-                temp = Sbox[a] ^ rconst;
-                temp = (temp << 8) | Sbox[b];
-                temp = (temp << 8) | Sbox[c];
-                temp = (temp << 8) | Sbox[d];
-                rconst = mulby2(rconst);
-            } else if (i % Nk == 4 && Nk > 6) {
-                int a, b, c, d;
-                a = (temp >> 24) & 0xFF;
-                b = (temp >> 16) & 0xFF;
-                c = (temp >> 8) & 0xFF;
-                d = (temp >> 0) & 0xFF;
-                temp = Sbox[a];
-                temp = (temp << 8) | Sbox[b];
-                temp = (temp << 8) | Sbox[c];
-                temp = (temp << 8) | Sbox[d];
-            }
-            ctx->keysched[i] = ctx->keysched[i - Nk] ^ temp;
+        /*
+         * Now do the key setup itself.
+         */
+        switch (keylen)
+        {
+        case 16:
+            AES_128_Key_Expansion (key, keysched);
+            break;
+        case 24:
+            AES_192_Key_Expansion (key, keysched);
+            break;
+        case 32:
+            AES_256_Key_Expansion (key, keysched);
+            break;
+        default:
+            assert(0);
         }
-    }
 
-    /*
-     * Now prepare the modified keys for the inverse cipher.
-     */
-    for (i = 0; i <= ctx->Nr; i++) {
-        for (j = 0; j < 4; j++) {
-            word32 temp;
-            temp = ctx->keysched[(ctx->Nr - i) * 4 + j];
-            if (i != 0 && i != ctx->Nr) {
-                /*
-                 * Perform the InvMixColumn operation on i. The D
-                 * tables give the result of InvMixColumn applied
-                 * to Sboxinv on individual bytes, so we should
-                 * compose Sbox with the D tables for this.
-                 */
-                int a, b, c, d;
-                a = (temp >> 24) & 0xFF;
-                b = (temp >> 16) & 0xFF;
-                c = (temp >> 8) & 0xFF;
-                d = (temp >> 0) & 0xFF;
-                temp = D0[Sbox[a]];
-                temp ^= D1[Sbox[b]];
-                temp ^= D2[Sbox[c]];
-                temp ^= D3[Sbox[d]];
+        /*
+         * Now prepare the modified keys for the inverse cipher.
+         */
+        *invkeysched = *keysched;
+        switch (ctx->Nr)
+        {
+        case 14:
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        case 12:
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        case 10:
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+            *(--invkeysched) = _mm_aesimc_si128(*(++keysched));
+        default:
+            *(--invkeysched) = *(++keysched);
+        }
+#else
+        assert(0);
+#endif /* GOODCOMPILER */
+    }
+    else {
+        int i, j, Nk, rconst;
+        assert(keylen == 16 || keylen == 24 || keylen == 32);
+
+        ctx->encrypt = &aes_encrypt_cbc_sw;
+        ctx->decrypt = &aes_decrypt_cbc_sw;
+        ctx->sdctr = &aes_sdctr_sw;
+        ctx->isNI = 0;
+
+        Nk = keylen / 4;
+        rconst = 1;
+        for (i = 0; i < (ctx->Nr + 1) * 4; i++) {
+            if (i < Nk)
+                ctx->keysched[i] = GET_32BIT_MSB_FIRST(key + 4 * i);
+            else {
+                word32 temp = ctx->keysched[i - 1];
+                if (i % Nk == 0) {
+                    int a, b, c, d;
+                    a = (temp >> 16) & 0xFF;
+                    b = (temp >> 8) & 0xFF;
+                    c = (temp >> 0) & 0xFF;
+                    d = (temp >> 24) & 0xFF;
+                    temp = Sbox[a] ^ rconst;
+                    temp = (temp << 8) | Sbox[b];
+                    temp = (temp << 8) | Sbox[c];
+                    temp = (temp << 8) | Sbox[d];
+                    rconst = mulby2(rconst);
+                } else if (i % Nk == 4 && Nk > 6) {
+                    int a, b, c, d;
+                    a = (temp >> 24) & 0xFF;
+                    b = (temp >> 16) & 0xFF;
+                    c = (temp >> 8) & 0xFF;
+                    d = (temp >> 0) & 0xFF;
+                    temp = Sbox[a];
+                    temp = (temp << 8) | Sbox[b];
+                    temp = (temp << 8) | Sbox[c];
+                    temp = (temp << 8) | Sbox[d];
+                }
+                ctx->keysched[i] = ctx->keysched[i - Nk] ^ temp;
             }
-            ctx->invkeysched[i * 4 + j] = temp;
+        }
+
+        /*
+         * Now prepare the modified keys for the inverse cipher.
+         */
+        for (i = 0; i <= ctx->Nr; i++) {
+            for (j = 0; j < 4; j++) {
+                word32 temp;
+                temp = ctx->keysched[(ctx->Nr - i) * 4 + j];
+                if (i != 0 && i != ctx->Nr) {
+                    /*
+                     * Perform the InvMixColumn operation on i. The D
+                     * tables give the result of InvMixColumn applied
+                     * to Sboxinv on individual bytes, so we should
+                     * compose Sbox with the D tables for this.
+                     */
+                    int a, b, c, d;
+                    a = (temp >> 24) & 0xFF;
+                    b = (temp >> 16) & 0xFF;
+                    c = (temp >> 8) & 0xFF;
+                    d = (temp >> 0) & 0xFF;
+                    temp = D0[Sbox[a]];
+                    temp ^= D1[Sbox[b]];
+                    temp ^= D2[Sbox[c]];
+                    temp ^= D3[Sbox[d]];
+                }
+                ctx->invkeysched[i * 4 + j] = temp;
+            }
         }
     }
 }
+
+#ifdef GOODCOMPILER
+static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+{
+    __m128i enc;
+    __m128i* block = (__m128i*)blk;
+    const __m128i* finish = (__m128i*)(blk + len);
+
+    assert((len & 15) == 0);
+
+    /* Load IV */
+    enc = _mm_loadu_si128((__m128i*)(ctx->iv));
+    while (block < finish)
+    {
+        /* Key schedule ptr   */
+        __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+
+        /* Xor data with IV */
+        enc  = _mm_xor_si128(_mm_loadu_si128(block), enc);
+
+        /* Perform rounds */
+        enc  = _mm_xor_si128(enc, *keysched);
+        switch (ctx->Nr)
+        {
+        case 14:
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+        case 12:
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+        case 10:
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenclast_si128(enc, *(++keysched));
+            break;
+        default:
+            assert(0);
+        }
+
+        /* Store and go to next block */
+        _mm_storeu_si128(block, enc);
+        ++block;
+    }
+
+    /* Update IV */
+    _mm_storeu_si128((__m128i*)(ctx->iv), enc);
+}
+
+static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+{
+    __m128i dec, last, iv;
+    __m128i* block = (__m128i*)blk;
+    const __m128i* finish = (__m128i*)(blk + len);
+
+    assert((len & 15) == 0);
+
+    /* Load IV */
+    iv = _mm_loadu_si128((__m128i*)(ctx->iv));
+    while (block < finish)
+    {
+        /* Key schedule ptr   */
+        __m128i* keysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
+        last = _mm_loadu_si128(block);
+        dec  = _mm_xor_si128(last, *keysched);
+        switch (ctx->Nr)
+        {
+        case 14:
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+        case 12:
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+        case 10:
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdec_si128(dec, *(++keysched));
+            dec = _mm_aesdeclast_si128(dec, *(++keysched));
+            break;
+        default:
+            assert(0);
+        }
+
+        /* Xor data with IV */
+        dec  = _mm_xor_si128(iv, dec);
+
+        /* Store data */
+        _mm_storeu_si128(block, dec);
+        iv = last;
+
+        /* Go to next block */
+        ++block;
+    }
+
+    /* Update IV */
+    _mm_storeu_si128((__m128i*)(ctx->iv), dec);
+}
+
+static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
+{
+    const __m128i BSWAP_EPI64 = _mm_setr_epi8(3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
+    const __m128i ONE  = _mm_setr_epi32(0,0,0,1);
+    const __m128i ZERO = _mm_setzero_si128();
+    __m128i iv;
+    __m128i* block = (__m128i*)blk;
+    const __m128i* finish = (__m128i*)(blk + len);
+
+    assert((len & 15) == 0);
+
+    iv = _mm_loadu_si128((__m128i*)ctx->iv);
+
+    while (block < finish)
+    {
+        __m128i enc;
+        __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);/* Key schedule ptr   */
+
+        /* Perform rounds */
+        enc  = _mm_xor_si128(iv, *keysched); /* Note that we use IV */
+        switch (ctx->Nr)
+        {
+        case 14:
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+        case 12:
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+        case 10:
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenc_si128(enc, *(++keysched));
+            enc = _mm_aesenclast_si128(enc, *(++keysched));
+            break;
+        default:
+            assert(0);
+        }
+
+        /* Xor with block and store result */
+        enc = _mm_xor_si128(enc, _mm_loadu_si128(block));
+        _mm_storeu_si128(block, enc);
+
+        /* Increment of IV */
+        iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64); /* Swap endianess     */
+        iv  = _mm_add_epi64(iv, ONE);            /* Inc low part       */
+        enc = _mm_cmpeq_epi64(iv, ZERO);         /* Check for carry    */
+        enc = _mm_unpacklo_epi64(ZERO, enc);     /* Pack carry reg     */
+        iv  = _mm_sub_epi64(iv, enc);            /* Sub carry reg      */
+        iv  = _mm_shuffle_epi8(iv, BSWAP_EPI64); /* Swap enianess back */
+
+        /* Go to next block */
+        ++block;
+    }
+
+    /* Update IV */
+    _mm_storeu_si128((__m128i*)ctx->iv, iv);
+}
+#endif /* GOODCOMPILER */
 
 #define MAKEWORD(i) ( newstate[i] = (E0[(block[i] >> 24) & 0xFF] ^ \
                                      E1[(block[(i+1)%4] >> 16) & 0xFF] ^ \
@@ -739,7 +1243,7 @@ static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
                             (Sbox[(block[(i+2)%4] >>  8) & 0xFF] <<  8) | \
                             (Sbox[(block[(i+3)%4]      ) & 0xFF]      ) )
 
-static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
+static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
 {
     word32 block[4];
     int i;
@@ -784,7 +1288,7 @@ static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
     memcpy(ctx->iv, block, sizeof(block));
 }
 
-static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
+static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
 {
     word32 iv[4], block[4], tmp;
     int i;
@@ -845,7 +1349,7 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext *ctx)
                            (Sboxinv[(block[(i+2)%4] >>  8) & 0xFF] <<  8) | \
                            (Sboxinv[(block[(i+1)%4]      ) & 0xFF]      ) )
 
-static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
+static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
 {
     word32 iv[4], block[4], ct[4];
     int i;
@@ -925,9 +1429,14 @@ void aes256_key(void *handle, unsigned char *key)
 void aes_iv(void *handle, unsigned char *iv)
 {
     AESContext *ctx = (AESContext *)handle;
-    int i;
-    for (i = 0; i < 4; i++)
-        ctx->iv[i] = GET_32BIT_MSB_FIRST(iv + 4 * i);
+    if (ctx->isNI) {
+        memcpy(ctx->iv, iv, sizeof(ctx->iv));
+    }
+    else {
+        int i;
+        for (i = 0; i < 4; i++)
+            ctx->iv[i] = GET_32BIT_MSB_FIRST(iv + 4 * i);
+    }
 }
 
 void aes_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len)
