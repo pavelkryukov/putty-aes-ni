@@ -4,7 +4,7 @@
  * Unit testing for AES cryptoalgorithm
  *
  * @author kryukov@frtk.ru
- * @version 1.5
+ * @version 2.0
  *
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
@@ -16,26 +16,21 @@
 #include "coverage.h"
 #include "defines.h"
 
-static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned blocklen, FILE *file)
+static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned blocklen, FILE *file, unsigned char* arena)
 {
     void *handle = aes_make_context();
     const size_t keylen = (size_t)keytype;
-    unsigned char *key = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
-    unsigned char *blk = (unsigned char*)malloc(sizeof(unsigned char) * blocklen);
-    unsigned char *iv  = (unsigned char*)malloc(sizeof(unsigned char) * keylen);
+    const size_t usedlen = 2 * keylen + blocklen;
+    unsigned char * const key = arena;
+    unsigned char * const blk = arena + keylen;
+    unsigned char * const iv  = arena + keylen + blocklen;
 
     unsigned i;
 
     srand(seed);
 
-    for (i = 0; i < blocklen; ++i)
-        blk[i] = rand();
-
-    for (i = 0; i < keylen; ++i)
-        key[i] = rand();
-
-    for (i = 0; i < keylen; ++i)
-        iv[i] = rand();
+    for (i = 0; i < usedlen; ++i)
+        arena[i] = rand();
 
     switch (keytype)
     {
@@ -50,7 +45,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
         break;
     }
 
-    aes_iv(handle, key);
+    aes_iv(handle, iv);
 
     switch (testtype)
     {
@@ -66,15 +61,15 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
     
     for (i = 0; i < blocklen; ++i)
         fprintf(file,"%02x ", blk[i]);
-        
+
     fprintf(file, "\n\n");
-    
+
     aes_free_context(handle);
-    free(key), free(blk), free(iv);
 }
 
 int main(int args, char** argv)
 {
+    unsigned char* arena;
     FILE *fp = fopen("test-output.txt", "w");
     KeyType keytypes[] = {AES128, AES192, AES256};
     size_t keytypes_s = DIM(keytypes);
@@ -84,14 +79,16 @@ int main(int args, char** argv)
     unsigned k, b, seed, n;
 
     n = strtoul(argv[1], NULL, 0);
+    arena = (unsigned char*)malloc(1 << 20);
 
     for (seed = 2; seed < n; ++seed)
         for (b = 0; b < blocksizes_s; ++b)
             for (k = 0; k < keytypes_s; ++k) {
-                test(keytypes[k], ENCRYPT, seed, blocksizes[b], fp);
-                test(keytypes[k], DECRYPT, seed, blocksizes[b], fp);
+                test(keytypes[k], ENCRYPT, seed, blocksizes[b], fp, arena);
+                test(keytypes[k], DECRYPT, seed, blocksizes[b], fp, arena);
             }
-    
+
+    free(arena);
     fclose(fp);
     
     return 0;
