@@ -17,21 +17,21 @@
  * Check of compiler version
  */
 #ifdef _FORCE_AES_NI
-#   define GOODCOMPILER
+#   define COMPILER_SUPPORTS_AES_NI
 #endif
 
 #if defined(__GNUC__)
 #    if (__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 4))
-#       define GOODCOMPILER
+#       define COMPILER_SUPPORTS_AES_NI
 #    endif
 #elif defined (_MSC_VER)
 #   if _MSC_FULL_VER >= 150030729
-#      define GOODCOMPILER
+#      define COMPILER_SUPPORTS_AES_NI
 #   endif
 #endif
 
 #ifdef _FORCE_SOFTWARE_AES
-#   undef GOODCOMPILER
+#   undef COMPILER_SUPPORTS_AES_NI
 #endif
 
 /*
@@ -40,7 +40,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-#ifdef GOODCOMPILER
+#ifdef COMPILER_SUPPORTS_AES_NI
 #  include <wmmintrin.h>
 #  include <smmintrin.h>
 #endif
@@ -71,7 +71,7 @@ static void aes_encrypt_cbc_sw(unsigned char*, int, AESContext*);
 static void aes_decrypt_cbc_sw(unsigned char*, int, AESContext*);
 static void aes_sdctr_sw(unsigned char*, int, AESContext*);
 
-#ifdef GOODCOMPILER
+#ifdef COMPILER_SUPPORTS_AES_NI
 static void aes_encrypt_cbc_ni(unsigned char*, int, AESContext*);
 static void aes_decrypt_cbc_ni(unsigned char*, int, AESContext*);
 static void aes_sdctr_ni(unsigned char*, int, AESContext*);
@@ -95,7 +95,7 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext * ctx)
 /*
  * Determinators of CPU type
  */
-#if defined(__GNUC__) && defined(GOODCOMPILER)
+#if defined(__GNUC__) && defined(COMPILER_SUPPORTS_AES_NI)
 static void __cpuid(unsigned int* CPUInfo, int func)
 {
     __asm__ __volatile__
@@ -112,7 +112,7 @@ static void __cpuid(unsigned int* CPUInfo, int func)
 
 static int supports_aes_ni()
 {
-#ifndef GOODCOMPILER
+#ifndef COMPILER_SUPPORTS_AES_NI
     return 0;
 #else
     unsigned int CPUInfo[4];
@@ -124,7 +124,7 @@ static int supports_aes_ni()
 /*
  * AES-NI key expansion helpers
  */
-#ifdef GOODCOMPILER
+#ifdef COMPILER_SUPPORTS_AES_NI
 static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
 {
     __m128i temp3;
@@ -306,7 +306,7 @@ static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key)
     KEY_256_ASSIST_1(&temp1, &temp2);
     key[14]=temp1;
 }
-#endif /* GOODCOMPILER */
+#endif /* COMPILER_SUPPORTS_AES_NI */
 
 /*
  * SW AES lookup tables
@@ -930,7 +930,7 @@ static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
 
     if (supports_aes_ni())
     {
-#ifdef GOODCOMPILER
+#ifdef COMPILER_SUPPORTS_AES_NI
         __m128i *keysched, *invkeysched;
         keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
         invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
@@ -986,7 +986,7 @@ static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
         }
 #else
         assert(0);
-#endif /* GOODCOMPILER */
+#endif /* COMPILER_SUPPORTS_AES_NI */
     }
     else {
         int i, j, Nk, rconst;
@@ -1060,7 +1060,7 @@ static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
     }
 }
 
-#ifdef GOODCOMPILER
+#ifdef COMPILER_SUPPORTS_AES_NI
 static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
 {
     __m128i enc;
@@ -1232,7 +1232,7 @@ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
     /* Update IV */
     _mm_storeu_si128((__m128i*)ctx->iv, iv);
 }
-#endif /* GOODCOMPILER */
+#endif /* COMPILER_SUPPORTS_AES_NI */
 
 #define MAKEWORD(i) ( newstate[i] = (E0[(block[i] >> 24) & 0xFF] ^ \
                                      E1[(block[(i+1)%4] >> 16) & 0xFF] ^ \
