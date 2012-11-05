@@ -18,9 +18,7 @@
  */
 #ifdef _FORCE_AES_NI
 #   define COMPILER_SUPPORTS_AES_NI
-#endif
-
-#if defined(__GNUC__)
+#elif defined(__GNUC__)
 #    if (__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 4))
 #       define COMPILER_SUPPORTS_AES_NI
 #    endif
@@ -120,6 +118,40 @@ static int supports_aes_ni()
     return CPUInfo[2] & (1 << 25);
 #endif
 }
+
+/*
+ * Wrapper of SHUFPD instruction for MSVC
+ */
+#ifdef COMPILER_SUPPORTS_AES_NI
+#ifdef _MSC_VER
+static __m128i mm_shuffle_pd_i0(__m128i a, __m128i b)
+{
+    union {
+        __m128i i;
+        __m128d d;
+    } au, bu, ru;
+    au.i = a;
+    bu.i = b;
+    ru.d = _mm_shuffle_pd(au.d, bu.d, 0);
+    return ru.i;
+}
+
+static __m128i mm_shuffle_pd_i1(__m128i a, __m128i b)
+{
+    union {
+        __m128i i;
+        __m128d d;
+    } au, bu, ru;
+    au.i = a;
+    bu.i = b;
+    ru.d = _mm_shuffle_pd(au.d, bu.d, 1);
+    return ru.i;
+}
+#else
+#define mm_shuffle_pd_i0(a, b) ((__m128i)_mm_shuffle_pd((__m128d)a, (__m128d)b, 0));
+#define mm_shuffle_pd_i1(a, b) ((__m128i)_mm_shuffle_pd((__m128d)a, (__m128d)b, 1));
+#endif
+#endif
 
 /*
  * AES-NI key expansion helpers
@@ -229,36 +261,32 @@ static void AES_192_Key_Expansion (unsigned char *userkey, __m128i *key)
     key[1]=temp3;
     temp2=_mm_aeskeygenassist_si128 (temp3,0x1);
     KEY_192_ASSIST(&temp1, &temp2, &temp3);
-    key[1] = (__m128i)_mm_shuffle_pd((__m128d)key[1],
-            (__m128d)temp1,0);
-    key[2] = (__m128i)_mm_shuffle_pd((__m128d)temp1,(__m128d)temp3,1);
+    key[1] = mm_shuffle_pd_i0(key[1], temp1);
+    key[2] = mm_shuffle_pd_i1(temp1, temp3);
     temp2=_mm_aeskeygenassist_si128 (temp3,0x2);
     KEY_192_ASSIST(&temp1, &temp2, &temp3);
     key[3]=temp1;
     key[4]=temp3;
     temp2=_mm_aeskeygenassist_si128 (temp3,0x4);
     KEY_192_ASSIST(&temp1, &temp2, &temp3);
-    key[4] = (__m128i)_mm_shuffle_pd((__m128d)key[4],
-            (__m128d)temp1,0);
-    key[5] = (__m128i)_mm_shuffle_pd((__m128d)temp1,(__m128d)temp3,1);
+    key[4] = mm_shuffle_pd_i0(key[4], temp1);
+    key[5] = mm_shuffle_pd_i1(temp1, temp3);
     temp2=_mm_aeskeygenassist_si128 (temp3,0x8);
     KEY_192_ASSIST(&temp1, &temp2, &temp3);
     key[6]=temp1;
     key[7]=temp3;
     temp2=_mm_aeskeygenassist_si128 (temp3,0x10);
     KEY_192_ASSIST(&temp1, &temp2, &temp3);
-    key[7] = (__m128i)_mm_shuffle_pd((__m128d)key[7],
-            (__m128d)temp1,0);
-    key[8] = (__m128i)_mm_shuffle_pd((__m128d)temp1,(__m128d)temp3,1);
+    key[7] = mm_shuffle_pd_i0(key[7], temp1);
+    key[8] = mm_shuffle_pd_i1(temp1, temp3);
     temp2=_mm_aeskeygenassist_si128 (temp3,0x20);
     KEY_192_ASSIST(&temp1, &temp2, &temp3);
     key[9]=temp1;
     key[10]=temp3;
     temp2=_mm_aeskeygenassist_si128 (temp3,0x40);
     KEY_192_ASSIST(&temp1, &temp2, &temp3);
-    key[10] = (__m128i)_mm_shuffle_pd((__m128d)key[10],
-            (__m128d)temp1,0);
-    key[11] = (__m128i)_mm_shuffle_pd((__m128d)temp1,(__m128d)temp3,1);
+    key[10] = mm_shuffle_pd_i0(key[10], temp1);
+    key[11] = mm_shuffle_pd_i1(temp1, temp3);
     temp2=_mm_aeskeygenassist_si128 (temp3,0x80);
     KEY_192_ASSIST(&temp1, &temp2, &temp3);
     key[12]=temp1;
@@ -914,7 +942,7 @@ static const word32 D3[256] = {
  * SW AES macros
  */
 #define ADD_ROUND_KEY (block[0]^=*keysched++, block[1]^=*keysched++, \
-		         block[2]^=*keysched++, block[3]^=*keysched++)
+                 block[2]^=*keysched++, block[3]^=*keysched++)
 #define MOVEWORD(i) ( block[i] = newstate[i] )
 #define mulby2(x) ( ((x&0x7F) << 1) ^ (x & 0x80 ? 0x1B : 0) )
 
