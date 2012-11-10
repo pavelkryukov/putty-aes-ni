@@ -33,6 +33,17 @@
 #endif
 
 /*
+ * Inline specificator
+ */
+#ifdef __GNUC__
+#    define INLINE __inline__
+#elif defined (_MSC_VER)
+#    define INLINE __forceinline
+#else
+#    defile INLINE
+#endif
+
+/*
  * Include section
  */
 #include <assert.h>
@@ -75,17 +86,17 @@ static void aes_decrypt_cbc_ni(unsigned char*, int, AESContext*);
 static void aes_sdctr_ni(unsigned char*, int, AESContext*);
 #endif
 
-static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
+INLINE static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
     ctx->encrypt(blk, len, ctx);
 }
 
-static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
+INLINE static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
 {
     ctx->decrypt(blk, len, ctx);
 }
 
-static void aes_sdctr(unsigned char *blk, int len, AESContext * ctx)
+INLINE static void aes_sdctr(unsigned char *blk, int len, AESContext * ctx)
 {
     ctx->sdctr(blk, len, ctx);
 }
@@ -94,7 +105,7 @@ static void aes_sdctr(unsigned char *blk, int len, AESContext * ctx)
  * Determinators of CPU type
  */
 #if defined(__GNUC__) && defined(COMPILER_SUPPORTS_AES_NI)
-static void __cpuid(unsigned int* CPUInfo, int func)
+INLINE static void __cpuid(unsigned int* CPUInfo, int func)
 {
     __asm__ __volatile__
     (
@@ -108,7 +119,7 @@ static void __cpuid(unsigned int* CPUInfo, int func)
 }
 #endif
 
-static int supports_aes_ni()
+INLINE static int supports_aes_ni()
 {
 #ifndef COMPILER_SUPPORTS_AES_NI
     return 0;
@@ -124,7 +135,7 @@ static int supports_aes_ni()
  */
 #ifdef COMPILER_SUPPORTS_AES_NI
 #ifdef _MSC_VER
-static __m128i mm_shuffle_pd_i0(__m128i a, __m128i b)
+INLINE static __m128i mm_shuffle_pd_i0(__m128i a, __m128i b)
 {
     union {
         __m128i i;
@@ -136,7 +147,7 @@ static __m128i mm_shuffle_pd_i0(__m128i a, __m128i b)
     return ru.i;
 }
 
-static __m128i mm_shuffle_pd_i1(__m128i a, __m128i b)
+INLINE static __m128i mm_shuffle_pd_i1(__m128i a, __m128i b)
 {
     union {
         __m128i i;
@@ -157,7 +168,7 @@ static __m128i mm_shuffle_pd_i1(__m128i a, __m128i b)
  * AES-NI key expansion assist functions
  */
 #ifdef COMPILER_SUPPORTS_AES_NI
-static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
+INLINE static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
 {
     __m128i temp3;
     temp2 = _mm_shuffle_epi32 (temp2 ,0xff);
@@ -171,7 +182,7 @@ static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
     return temp1;
 }
 
-static void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * temp3)
+INLINE static void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * temp3)
 {
     __m128i temp4;
     *temp2 = _mm_shuffle_epi32 (*temp2, 0x55);
@@ -188,7 +199,7 @@ static void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * temp3)
     *temp3 = _mm_xor_si128 (*temp3, *temp2);
 }
 
-static void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2)
+INLINE static void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2)
 {
     __m128i temp4;
     *temp2 = _mm_shuffle_epi32(*temp2, 0xff);
@@ -201,7 +212,7 @@ static void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2)
     *temp1 = _mm_xor_si128 (*temp1, *temp2);
 }
 
-static void KEY_256_ASSIST_2(__m128i* temp1, __m128i * temp3)
+INLINE static void KEY_256_ASSIST_2(__m128i* temp1, __m128i * temp3)
 {
     __m128i temp2,temp4;
     temp4 = _mm_aeskeygenassist_si128 (*temp1, 0x0);
