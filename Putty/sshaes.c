@@ -1307,7 +1307,7 @@ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
                    MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
 
 #define DECLASTWORD(i) (newstate[i] = \
-                           (Sboxinv[(block[i]         >> 24) & 0xFF] << 24) | \
+                           (Sboxinv[(block[i]       >> 24) & 0xFF] << 24) | \
                            (Sboxinv[(block[(i+3)&3] >> 16) & 0xFF] << 16) | \
                            (Sboxinv[(block[(i+2)&3] >>  8) & 0xFF] <<  8) | \
                            (Sboxinv[(block[(i+1)&3]      ) & 0xFF]      ) )
@@ -1355,7 +1355,7 @@ static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
             break;
         default:
             assert(0);
-        }        
+        }
         for (i = 0; i < 4; i++)
             PUT_32BIT_MSB_FIRST(blk + 4 * i, block[i]);
         blk += 16;
@@ -1401,7 +1401,7 @@ static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
             break;
         default:
             assert(0);
-        }  
+        }
         for (i = 0; i < 4; i++) {
             tmp = GET_32BIT_MSB_FIRST(blk + 4 * i);
             PUT_32BIT_MSB_FIRST(blk + 4 * i, tmp ^ block[i]);
