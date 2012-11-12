@@ -1,7 +1,7 @@
 # Makefile for unit tests
 #
 # @author kryukov@frtk.ru
-# @version 4.2
+# @version 4.3
 #
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
@@ -14,6 +14,8 @@ OBJ_DIR=obj
 BIN_DIR=bin
 TXT_DIR=txt
 SRC_DIR=src
+HEADERS=$(SRC_DIR)/coverage.h $(SRC_DIR)/defines.h
+MAKEFILE=Makefile
 
 ifeq ($(SDE), yes)
 	SDERUN=sde --
@@ -32,25 +34,25 @@ $(BIN_DIR)/sshaesni-%: $(OBJ_DIR)/sshaesni.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttym
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-$(OBJ_DIR)/sshaes.o: $(PUTTY)/sshaes.c
+$(OBJ_DIR)/sshaes.o: $(PUTTY)/sshaes.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $^ -c -o $@ -I $(PUTTY) -D_FORCE_SOFTWARE_AES
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY) -maes -msse4 -D_FORCE_SOFTWARE_AES
    
-$(OBJ_DIR)/sshaesni.o: $(PUTTY)/sshaes.c
+$(OBJ_DIR)/sshaesni.o: $(PUTTY)/sshaes.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $^ -c -o $@ -I $(PUTTY) -maes -msse4
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY) -maes -msse4
    
-$(OBJ_DIR)/aesdemo-decode.o: $(SRC_DIR)/aesdemo.c
+$(OBJ_DIR)/aesdemo-decode.o: $(SRC_DIR)/aesdemo.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $^ -c -o $@ -DDECODE
+	@$(CC) $(CFLAGS) $< -c -o $@ -DDECODE
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $^ -c -o $@
+	@$(CC) $(CFLAGS) $< -c -o $@
 
-$(BIN_DIR)/cpuid: $(SRC_DIR)/cpuid.c
+$(BIN_DIR)/cpuid: $(SRC_DIR)/cpuid.c $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $^ -o $@ -DSILENT
+	@$(CC) $(CFLAGS) $< -o $@ -DSILENT
 
 $(TXT_DIR)/test-original-%.txt: $(BIN_DIR)/sshaes-test
 	@echo "[run] $@"
