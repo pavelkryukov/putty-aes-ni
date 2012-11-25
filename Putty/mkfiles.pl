@@ -37,6 +37,7 @@ eval 'chdir "charset"; require "sbcsgen.pl"; chdir ".."';
 $divert = undef; # ref to scalar in which text is currently being put
 $help = ""; # list of newline-free lines of help text
 $project_name = "project"; # this is a good enough default
+$aes = undef;
 %makefiles = (); # maps makefile types to output makefile pathnames
 %makefile_extra = (); # maps makefile types to extra Makefile text
 %programs = (); # maps prog name + type letter to listref of objects/resources
@@ -391,10 +392,17 @@ sub manpages {
   return ();
 }
 
+sub checkaesingcc {
+  unless (defined $aes) {
+    $aes = (`gcc --version` =~ /^gcc.*4\.[4-9]\..*/) ? '-maes -msse4 ' : '';
+  }
+}
+
 # Now we're ready to output the actual Makefiles.
 
 if (defined $makefiles{'cygwin'}) {
     $dirpfx = &dirpfx($makefiles{'cygwin'}, "/");
+    &checkaesingcc;
 
     ##-- CygWin makefile
     open OUT, ">$makefiles{'cygwin'}"; select OUT;
@@ -419,7 +427,7 @@ if (defined $makefiles{'cygwin'}) {
     "# RCINC = --include-dir c:\\cygwin\\include\\\n".
     "\n".
     &splitline("CFLAGS = -mno-cygwin -Wall -O2 -D_WINDOWS -DDEBUG -DWIN32S_COMPAT".
-      " -D_NO_OLDNAMES -DNO_MULTIMON -DNO_HTMLHELP " .
+      " -D_NO_OLDNAMES -DNO_MULTIMON -DNO_HTMLHELP " . $aes .
 	       (join " ", map {"-I$dirpfx$_"} @srcdirs)) .
 	       "\n".
     "LDFLAGS = -mno-cygwin -s\n".
@@ -932,6 +940,7 @@ if (defined $makefiles{'vcproj'}) {
 
 if (defined $makefiles{'gtk'}) {
     $dirpfx = &dirpfx($makefiles{'gtk'}, "/");
+    &checkaesingcc;
 
     ##-- X/GTK/Unix makefile
     open OUT, ">$makefiles{'gtk'}"; select OUT;
@@ -960,7 +969,7 @@ if (defined $makefiles{'gtk'}) {
     "\n".
     "unexport CFLAGS # work around a weird issue with krb5-config\n".
     "\n".
-    &splitline("CFLAGS = -O2 -Wall -Werror -g " .
+    &splitline("CFLAGS = -O2 -Wall -Werror -g " . $aes .
 	       (join " ", map {"-I$dirpfx$_"} @srcdirs) .
 	       " \$(shell \$(GTK_CONFIG) --cflags)").
 		 " -D _FILE_OFFSET_BITS=64\n".
@@ -1019,6 +1028,7 @@ if (defined $makefiles{'gtk'}) {
 
 if (defined $makefiles{'unix'}) {
     $dirpfx = &dirpfx($makefiles{'unix'}, "/");
+    &checkaesingcc;
 
     ##-- GTK-free pure-Unix makefile for non-GUI apps only
     open OUT, ">$makefiles{'unix'}"; select OUT;
@@ -1039,7 +1049,7 @@ if (defined $makefiles{'unix'}) {
     "\n".
     "unexport CFLAGS # work around a weird issue with krb5-config\n".
     "\n".
-    &splitline("CFLAGS = -O2 -Wall -Werror -g " .
+    &splitline("CFLAGS = -O2 -Wall -Werror -g " . $aes .
 	       (join " ", map {"-I$dirpfx$_"} @srcdirs)).
 		 " -D _FILE_OFFSET_BITS=64\n".
     "ULDFLAGS = \$(LDFLAGS)\n".
@@ -1223,6 +1233,7 @@ if (defined $makefiles{'lcc'}) {
 
 if (defined $makefiles{'osx'}) {
     $dirpfx = &dirpfx($makefiles{'osx'}, "/");
+    &checkaesingcc;
 
     ##-- Mac OS X makefile
     open OUT, ">$makefiles{'osx'}"; select OUT;
@@ -1236,7 +1247,7 @@ if (defined $makefiles{'osx'}) {
     print
     "CC = \$(TOOLPATH)gcc\n".
     "\n".
-    &splitline("CFLAGS = -O2 -Wall -Werror -g " .
+    &splitline("CFLAGS = -O2 -Wall -Werror -g " . $aes .
 	       (join " ", map {"-I$dirpfx$_"} @srcdirs))."\n".
     "MLDFLAGS = -framework Cocoa\n".
     "ULDFLAGS =\n".
