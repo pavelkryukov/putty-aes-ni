@@ -1,0 +1,23 @@
+notifications:
+  email: false
+
+language: cpp
+sudo: false
+
+branches:
+  only:
+  - master
+  - travis
+  
+compiler:
+  - gcc
+
+install:
+  - git submodule init
+  - git submodule update
+
+script:
+  - cd $TRAVIS_BUILD_DIR/aestest
+  - ./run.sh -p
+  - cat txt/perf-original.sorted.txt
+  - cat txt/perf-output.sorted.txt
