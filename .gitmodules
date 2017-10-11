@@ -1,0 +1,3 @@
+[submodule "Putty"]
+	path = Putty
+	url = https://github.com/pavelkryukov/putty-aes-ni2
