@@ -1,4 +1,10 @@
-# putty-aes-ni
-PuTTY with support of AES instruction set
+# PuTTY-AES-NI
 
-WARNING: This repository is obsolete and is not longer supported. Please go to https://github.com/pavelkryukov/putty-aes-ni2
+PuTTY-AES-NI is a PuTTY fork that uses Intel AES-NI ISA extension. The developers team consisted of:
+ * [Pavel Kryukov](https://github.com/pavelkryukov)
+ * [Maxim Kuznetsov](https://github.com/mkuznets)
+ * [Svyatoslav Kuzmich](https://github.com/skuzmich)
+
+To keep PuTTY-AES-NI easily mergeable with PuTTY, repositories were separated:
+ * Main PuTTY-AES-NI repository: https://github.com/pavelkryukov/putty-aes-ni2
+ * Stuff for testing and demonstration + detailed changelist: https://github.com/pavelkryukov/putty-aes-ni
