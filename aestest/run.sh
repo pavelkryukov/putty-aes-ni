@@ -33,7 +33,7 @@ else
     if [ ! `which sde` ];
         then
             echo -e "not found"
-            exit
+            exit 1
         else
             echo "found `sde -version | grep 'Ver' | sed 's/\(.*\)Version\:\( *\)\(.*\)/\3/g'`"
             SDE="yes"
@@ -50,7 +50,7 @@ then
     echo "********** Tests passed! **************"
 else
     echo "********** Tests not passed! **************"
-    exit
+    exit 2
 fi
 
 if [ ! "$1" = "-p" ];
