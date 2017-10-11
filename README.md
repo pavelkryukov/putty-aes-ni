@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.org/pavelkryukov/putty-aes-ni)
+
 # PuTTY-AES-NI
 
 PuTTY-AES-NI is a PuTTY fork that uses Intel AES-NI ISA extension. The developers team consisted of:
