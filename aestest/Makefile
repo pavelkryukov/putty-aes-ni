@@ -7,7 +7,7 @@
 # http://putty-aes-ni.googlecode.com/
 
 CC=gcc
-CFLAGS=-O2 -Wall -Werror -std=c89 -Wno-long-long % -pedantic
+CFLAGS=-O2 -Wall -Werror -std=c89 -Wno-long-long # -pedantic
 LDFLAGS=
 PUTTY=../Putty
 OBJ_DIR=obj
