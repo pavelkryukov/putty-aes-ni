@@ -8,7 +8,7 @@ PuTTY-AES-NI is a PuTTY fork that uses Intel AES-NI ISA extension. The developer
  * [Svyatoslav Kuzmich](https://github.com/skuzmich)
 
 To keep PuTTY-AES-NI easily mergeable with PuTTY, repositories were separated:
- * Main PuTTY-AES-NI repository: https://github.com/pavelkryukov/putty-aes-ni2
- * Stuff for testing and demonstration + detailed changelist: https://github.com/pavelkryukov/putty-aes-ni
+ * Main repository: https://github.com/pavelkryukov/putty-aes-ni2
+ * Testing, demonstration, detailed changelist: https://github.com/pavelkryukov/putty-aes-ni
 
-Project is made as [MIPT Cryptography course project](http://mipt.ru/education/chair/radio_engineering/infsec/), team demonstrated results on [55th MIPT Conference](http://conf55.mipt.ru/info/main/), "Radio Engineering and Cryptography" section and got a "Best Presentation of Section" achievement.
+PuTTY-AES-NI is a [MIPT Cryptography course project](http://mipt.ru/education/chair/radio_engineering/infsec/). The results were presented in [55th MIPT Conference](http://conf55.mipt.ru/info/main/), "Radio Engineering and Cryptography" section.
