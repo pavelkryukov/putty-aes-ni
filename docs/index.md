@@ -1,8 +1,13 @@
-[PuTTY](http://www.putty.org/) is one of the few programs without support of [AES instruction set](http://en.wikipedia.org/wiki/AES_instruction_set) introduced in 2008. We decided to make support of these instructions and see impact on PuTTY and pscp performance after these changes.
+[PuTTY](http://www.putty.org/) is one of the few programs without support of [AES instruction set](http://en.wikipedia.org/wiki/AES_instruction_set) introduced in 2008. We decided to make support of these instructions and see impact on PuTTY and pscp performance after these changes. The developers team consisted of:
+ * [Pavel Kryukov](https://github.com/pavelkryukov)
+ * [Maxim Kuznetsov](https://github.com/mkuznets)
+ * [Svyatoslav Kuzmich](https://github.com/skuzmich)
 
 If you want to know if your processor supports these instruction set, [look at this table](http://ark.intel.com/search/advanced?AESTech=true). You can also use [Intel® Software Development Emulator](http://software.intel.com/en-us/articles/intel-software-development-emulator), it may execute AES instruction set.
 
 Project is made as [MIPT Cryptography course project](http://radio.fizteh.ru/infsec/), team showed results on [55th MIPT Conference](http://conf55.mipt.ru/info/main/), "Radio Engineering and Cryptography" section and got a "Best Presentation of Section" achievement.
+
+[![Build Status](https://travis-ci.org/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.org/pavelkryukov/putty-aes-ni)
 
 ----
 ### How to run demonstration
@@ -45,7 +50,7 @@ Format of output files is following:
 Codes:
 
 |0 - encryption|1 - decryption|2 - sdctr|
-|:---|:-----|:-------|:---|
+|:---|:-----|:---|
 
-Every experiment is made 30 times. Range of memory is from 16 bytes to 256 Mbytes, SDCTR tests are disabled.
+Every experiment is performed 30 times with different data sets. Range of memory is from 16 bytes to 256 Mbytes, SDCTR tests are disabled.
 Optimization of both AES algorithms is enabled, to turn it off, change $(OPT) to $(NOOPT) in Makefile.
