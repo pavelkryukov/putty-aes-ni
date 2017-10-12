@@ -15,7 +15,7 @@ then
     echo "[check] Perfomance mode enabled"
     SEEDS="5"
 else
-    SEEDS="50"
+    SEEDS="500"
 fi
 
 mkdir obj bin txt -p
