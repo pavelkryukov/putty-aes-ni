@@ -26,5 +26,6 @@ build_script:
 - nmake -f Makefile.vc
 
 test_script:
-- cd C:\projects\putty-aes-ni\Putty
-- pscp
+- cd C:\projects\putty-aes-ni\Putty\windows
+- dir *.exe
+- pscp /?
