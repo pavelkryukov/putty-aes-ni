@@ -24,5 +24,4 @@ script:
   - ./run.sh
   - cd $TRAVIS_BUILD_DIR/Putty
   - ./mkfiles.pl -U
-  - cd unix
-  - make
+  - make pscp
