@@ -4,6 +4,7 @@ If you want to know if your processor supports these instruction set, [look at t
 
 Project is made as [MIPT Cryptography course project](http://radio.fizteh.ru/infsec/), team showed results on [55th MIPT Conference](http://conf55.mipt.ru/info/main/), "Radio Engineering and Cryptography" section and got a "Best Presentation of Section" achievement.
 
+----
 ## How to run demonstration
 
 ### Checkout
@@ -29,7 +30,8 @@ Syntax is the same as 'cp' command:
 
 ### Known issues
   * If file size is not multiple of 16 bytes, last bytes may be encrypt/decrypt incorrect.
-  
+
+---
 ## How to run performance unit tests
 
   1. `git clone https://github.com/pavelkryukov/putty-aes-ni.git <workdir>`
