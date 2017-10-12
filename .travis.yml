@@ -18,10 +18,12 @@ before_install:
 install:
   - git submodule init
   - git submodule update
+  - pip install --user numpy
 
 script:
   - cd $TRAVIS_BUILD_DIR/aestest
   - ./run.sh
+  - ./run.sh -p
   - cd $TRAVIS_BUILD_DIR/Putty
   - ./mkfiles.pl -U
   - make pscp
