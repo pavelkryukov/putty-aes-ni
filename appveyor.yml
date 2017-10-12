@@ -1,0 +1,30 @@
+version: "{branch}-ci-{build}"
+image: Visual Studio 2013
+
+branches:
+  only:
+  - master
+  - appveyor
+  
+environment:
+  matrix:
+  - build: msvc
+    platform: x86
+  - build: msvc
+    platform: x64
+    
+before_build:
+- git submodule init
+- git submodule update
+- call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
+- set PATH=%PATH%;C:\Perl
+
+build_script:
+- cd C:\projects\putty-aes-ni\Putty
+- perl ./mkfiles.pl
+- cd windows
+- nmake -f Makefile.vc
+
+test_script:
+- cd C:\projects\putty-aes-ni\Putty\windows
+- dir *.exe
