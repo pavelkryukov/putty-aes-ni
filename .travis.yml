@@ -22,3 +22,8 @@ install:
 script:
   - cd $TRAVIS_BUILD_DIR/aestest
   - ./run.sh -p
+  - cd $TRAVIS_BUILD_DIR/Putty
+  - ./mkfiles.pl
+  - cd unix
+  - ./configure
+  - make
