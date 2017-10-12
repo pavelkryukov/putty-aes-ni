@@ -58,4 +58,4 @@ then
     exit
 fi
 
-make txt/perf-original.sorted.txt txt/perf-output.sorted.txt SDE=$SDE -s
+make txt/perf-geomean.txt SDE=$SDE -s && echo -n "Speedup in geomean is: " && cat txt/perf-geomean.txt

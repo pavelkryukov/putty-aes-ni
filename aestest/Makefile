@@ -77,6 +77,10 @@ $(TXT_DIR)/perf-output.txt: $(BIN_DIR)/sshaesni-perf
 $(TXT_DIR)/%.sorted.txt: $(TXT_DIR)/%.txt
 	@echo "[sort] $@"
 	@sort $^ > $@
- 
+    
+$(TXT_DIR)/perf-geomean.txt: $(TXT_DIR)/perf-original.sorted.txt $(TXT_DIR)/perf-output.sorted.txt
+	@echo "[geomean] $@"
+	@python ./geomean.py $^ > $@
+
 clean:
 	rm $(BIN_DIR) $(OBJ_DIR) $(TXT_DIR) -rf
