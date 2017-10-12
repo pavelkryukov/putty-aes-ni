@@ -5,16 +5,12 @@ If you want to know if your processor supports these instruction set, [look at t
 Project is made as [MIPT Cryptography course project](http://radio.fizteh.ru/infsec/), team showed results on [55th MIPT Conference](http://conf55.mipt.ru/info/main/), "Radio Engineering and Cryptography" section and got a "Best Presentation of Section" achievement.
 
 ----
-## How to run demonstration
-
-### Checkout
+### How to run demonstration
 
   1. `git clone https://github.com/pavelkryukov/putty-aes-ni.git <workdir>`
   1. `cd <workdir>`
   1. `git submodule --init update`
   1. `cd aestest`
-
-### Make
 
 You are able to build 4 binaries:
 
@@ -23,16 +19,14 @@ You are able to build 4 binaries:
 | Encrypt | bin/sshaes-demo | bin/sshaesni-demo |
 | Decrypt | bin/sshaes-demo-decode | bin/sshaesni-demo-decode |
 
-### Run
-
 Syntax is the same as 'cp' command:
 `<sshdemo> src dst`
 
-### Known issues
+**Known issues:**
   * If file size is not multiple of 16 bytes, last bytes may be encrypt/decrypt incorrect.
 
----
-## How to run performance unit tests
+----
+### How to run performance unit tests
 
   1. `git clone https://github.com/pavelkryukov/putty-aes-ni.git <workdir>`
   1. `cd <workdir>`
@@ -43,15 +37,15 @@ Syntax is the same as 'cp' command:
   1. Wait...
   1. There are 2 new files, perf-original.txt and perf-output.txt. First one is for standard version, second is for AES-NI version.
 
-### Comments
+Format of output files is following:
 
-  1. Format of output files is following: |code|keylen|blocklen|time|
+|code|keylen|blocklen|time|
 |:---|:-----|:-------|:---|
-  1. Codes: |0 - encryption|1 - decryption|2 - sdctr|
 
+Codes:
 
-### Defaults 
-  1. Every experiment is made 30 times
-  1. Range of memory is from 16 bytes to 256 Mbytes
-  1. SDCTR tests are disabled
-  1. Optimization of both AES algorithms is enabled, to turn it off, change $(OPT) to $(NOOPT) in Makefile.
+|0 - encryption|1 - decryption|2 - sdctr|
+|:---|:-----|:-------|:---|
+
+Every experiment is made 30 times. Range of memory is from 16 bytes to 256 Mbytes, SDCTR tests are disabled.
+Optimization of both AES algorithms is enabled, to turn it off, change $(OPT) to $(NOOPT) in Makefile.
