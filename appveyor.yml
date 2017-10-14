@@ -23,7 +23,8 @@ before_build:
 - cmd: git submodule init
 - cmd: git submodule update
 - cmd: if "%build%"=="msvc" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
-- cmd: set PATH=%MINGW_ROOT%;%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%;C:\Perl
+- cmd: set PATH=%PATH%;C:\Perl
+- cmd: if not "%build%"=="msvc" set PATH=%MINGW_ROOT%;%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
 
 build_script:
 - cmd: cd C:\projects\putty-aes-ni\Putty
