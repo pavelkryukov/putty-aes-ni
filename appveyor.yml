@@ -12,12 +12,12 @@ environment:
     platform: x86
   - build: msvc
     platform: x64
-%  - build: g++
-%    platform: x86
-%    CYGWIN_ROOT: C:\cygwin
-%  - build: g++
-%    platform: x64
-%    CYGWIN_ROOT: C:\cygwin64
+#  - build: g++
+#    platform: x86
+#    CYGWIN_ROOT: C:\cygwin
+#  - build: g++
+#    platform: x64
+#    CYGWIN_ROOT: C:\cygwin64
     
 before_build:
 - cmd: git submodule update --init
