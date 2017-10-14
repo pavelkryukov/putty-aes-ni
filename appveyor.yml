@@ -30,7 +30,7 @@ build_script:
 - perl ./mkfiles.pl
 - cd windows
 - if "%build%"=="msvc" nmake -f Makefile.vc
-- if not "%build%"=="msvc" bash -lc "which make; make -f ./Makefile.mgw"
+- if not "%build%"=="msvc" bash -lc "make --version; make --file=Makefile.mgw"
 
 test_script:
 - cd C:\projects\putty-aes-ni\Putty\windows
