@@ -31,7 +31,7 @@ build_script:
 - cmd: perl ./mkfiles.pl
 - cmd: cd windows
 - cmd: if "%build%"=="msvc" nmake -f Makefile.vc
-- cmd: if not "%build%"=="msvc" bash -lc "make -f Makefile.mgw"
+- cmd: if not "%build%"=="msvc" bash -lc "pwd; make -f Makefile.mgw"
 
 test_script:
 - cmd: cd C:\projects\putty-aes-ni\Putty\windows
