@@ -29,7 +29,7 @@ before_build:
 build_script:
 - cmd: cd C:\projects\putty-aes-ni\Putty
 - cmd: if "%build%"=="msvc" perl ./mkfiles.pl
-- cmd: if not "%build%"=="msvc" bash -lc "perl ./mkfiles.pl"
+- cmd: if not "%build%"=="msvc" bash -lc "cd /c/projects/putty-aes-ni/Putty; perl ./mkfiles.pl"
 - cmd: cd windows
 - cmd: if "%build%"=="msvc" nmake -f Makefile.vc
 - cmd: if not "%build%"=="msvc" bash -lc "cd /c/projects/putty-aes-ni/Putty/windows; make -f Makefile.mgw"
