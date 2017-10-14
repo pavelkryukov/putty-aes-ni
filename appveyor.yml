@@ -23,11 +23,11 @@ before_build:
 - cmd: git submodule init
 - cmd: git submodule update
 - cmd: if "%build%"=="msvc" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
-- cmd: set PATH=%MINGW_ROOT%;%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
+- cmd: set PATH=%MINGW_ROOT%;%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%;C:\Perl
 
 build_script:
 - cmd: cd C:\projects\putty-aes-ni\Putty
-- cmd: C:\Perl\perl.exe ./mkfiles.pl
+- cmd: perl ./mkfiles.pl
 - cmd: cd windows
 - cmd: if "%build%"=="msvc" nmake -f Makefile.vc
 - cmd: if not "%build%"=="msvc" bash -lc "make -f Makefile.mgw"
