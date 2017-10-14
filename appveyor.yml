@@ -20,7 +20,7 @@ environment:
     CYGWIN_ROOT: C:\cygwin64
     
 before_build:
-- cmd: git submodule --init update
+- cmd: git submodule update --init
 - cmd: if "%build%"=="msvc" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
 - cmd: set PATH=%PATH%;C:\Perl
 - cmd: if not "%build%"=="msvc" set PATH=%CYGWIN_ROOT%;%CYGWIN_ROOT%\bin;%PATH%
