@@ -12,18 +12,23 @@ environment:
     platform: x86
   - build: msvc
     platform: x64
+  - build: g++
+    platform: x86
+  - build: g++
+    platform: x64
     
 before_build:
 - git submodule init
 - git submodule update
-- call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
+- if "%build%"=="msvc" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
 - set PATH=%PATH%;C:\Perl
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
 - perl ./mkfiles.pl
 - cd windows
-- nmake -f Makefile.vc
+- if "%build%"=="msvc" nmake -f Makefile.vc
+- if not "%build%"=="msvc" bash "make -f Makefile.mgw"
 
 test_script:
 - cd C:\projects\putty-aes-ni\Putty\windows
