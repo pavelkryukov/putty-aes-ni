@@ -14,14 +14,16 @@ environment:
     platform: x64
   - build: g++
     platform: x86
+    MINGW_ROOT: C:\msys64\mingw32
   - build: g++
     platform: x64
+    MINGW_ROOT: C:\msys64\mingw64
     
 before_build:
 - git submodule init
 - git submodule update
 - if "%build%"=="msvc" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
-- set PATH=%PATH%;C:\Perl
+- set PATH=%PATH%;C:\Perl;%MINGW_ROOT%;%MINGW_ROOT%\bin;C:\msys64\usr\bin\
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
