@@ -27,7 +27,7 @@ before_build:
 
 build_script:
 - cmd: cd C:\projects\putty-aes-ni\Putty
-- cmd: C:\Perl\perl ./mkfiles.pl
+- cmd: C:\Perl\perl.exe ./mkfiles.pl
 - cmd: cd windows
 - cmd: if "%build%"=="msvc" nmake -f Makefile.vc
 - cmd: if not "%build%"=="msvc" bash -lc "make -f Makefile.mgw"
