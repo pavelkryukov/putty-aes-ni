@@ -1,5 +1,5 @@
 version: "{branch}-ci-{build}"
-image: Visual Studio 2015
+image: Visual Studio 2013
 
 branches:
   only:
@@ -20,18 +20,18 @@ environment:
     MINGW_ROOT: C:\msys64\mingw64
     
 before_build:
-- git submodule init
-- git submodule update
-- if "%build%"=="msvc" call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
-- set PATH=%PATH%;C:\Perl;%MINGW_ROOT%;%MINGW_ROOT%\bin;C:\msys64\usr\bin\
+- cmd: git submodule init
+- cmd: git submodule update
+- cmd: if "%build%"=="msvc" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
+- cmd: set PATH=%MINGW_ROOT%;%MINGW_ROOT%\bin;C:\msys64\usr\bin\;%PATH%
 
 build_script:
-- cd C:\projects\putty-aes-ni\Putty
-- perl ./mkfiles.pl
-- cd windows
-- if "%build%"=="msvc" nmake -f Makefile.vc
-- if not "%build%"=="msvc" bash -lc "make --file=Makefile.mgw"
+- cmd: cd C:\projects\putty-aes-ni\Putty
+- cmd: C:\Perl\perl ./mkfiles.pl
+- cmd: cd windows
+- cmd: if "%build%"=="msvc" nmake -f Makefile.vc
+- cmd: if not "%build%"=="msvc" bash -lc "make -f Makefile.mgw"
 
 test_script:
-- cd C:\projects\putty-aes-ni\Putty\windows
-- dir *.exe
+- cmd: cd C:\projects\putty-aes-ni\Putty\windows
+- cmd: dir *.exe
