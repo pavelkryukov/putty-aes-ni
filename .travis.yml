@@ -17,8 +17,6 @@ before_install:
   - chmod +x aestest/run.sh
 
 install:
-  - git submodule init
-  - git submodule update
   - pip install --user numpy
 
 script:
