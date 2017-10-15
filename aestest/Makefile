@@ -6,7 +6,7 @@
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
 
-CC=gcc
+CC?=gcc
 CFLAGS=-O2 -Wall -Werror -std=c89 -Wno-long-long # -pedantic
 LDFLAGS=
 PUTTY=../Putty
