@@ -28,7 +28,7 @@ build_script:
 - cmd: perl ./mkfiles.pl
 - cmd: cd windows
 - cmd: if "%build%"=="msvc" nmake -f Makefile.vc
-- cmd: if "%build%"=="clang" C:\msys64\usr\bin\make -f Makefile.clangcl
+- cmd: if "%build%"=="clang" C:\MinGW\bin\make -f Makefile.clangcl
 - cmd: if "%build%"=="gcc" C:\msys64\usr\bin\bash -lc "cd /c/projects/putty-aes-ni/Putty/windows; make -f Makefile.mgw"
 
 test_script:
