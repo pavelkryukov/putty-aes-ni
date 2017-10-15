@@ -11,7 +11,7 @@ branches:
   
 compiler:
   - gcc
-#  - clang
+  - clang
 
 before_install:
   - chmod +x aestest/run.sh
