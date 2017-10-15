@@ -20,7 +20,7 @@ environment:
 before_build:
 - cmd: git submodule update --init
 - cmd: if "%build%"=="msvc" call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
-- cmd: set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\msys64\usr\bin
+- cmd: set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin
 - cmd: if "%build%"=="gcc" set PATH=%CYGWIN_ROOT%;%CYGWIN_ROOT%\bin;%PATH%
 
 build_script:
@@ -28,8 +28,8 @@ build_script:
 - cmd: perl ./mkfiles.pl
 - cmd: cd windows
 - cmd: if "%build%"=="msvc" nmake -f Makefile.vc
-- cmd: if "%build%"=="clang" bash -lc "cd /c/projects/putty-aes-ni/Putty/windows; make -f Makefile.clangcl"
-- cmd: if "%build%"=="gcc" bash -lc "cd /c/projects/putty-aes-ni/Putty/windows; make -f Makefile.mgw"
+- cmd: if "%build%"=="clang" C:\msys64\usr\bin\bash -lc "cd /c/projects/putty-aes-ni/Putty/windows; make -f Makefile.clangcl"
+- cmd: if "%build%"=="gcc" C:\msys64\usr\bin\bash -lc "cd /c/projects/putty-aes-ni/Putty/windows; make -f Makefile.mgw"
 
 test_script:
 - cmd: cd C:\projects\putty-aes-ni\Putty\windows
