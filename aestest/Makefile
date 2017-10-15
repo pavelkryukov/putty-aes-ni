@@ -36,11 +36,11 @@ $(BIN_DIR)/sshaesni-%: $(OBJ_DIR)/sshaesni.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttym
 
 $(OBJ_DIR)/sshaes.o: $(PUTTY)/sshaes.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY) -maes -msse4 -D_FORCE_SOFTWARE_AES
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY) -D_FORCE_SOFTWARE_AES
    
 $(OBJ_DIR)/sshaesni.o: $(PUTTY)/sshaes.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY) -maes -msse4
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY)
    
 $(OBJ_DIR)/aesdemo-decode.o: $(SRC_DIR)/aesdemo.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
