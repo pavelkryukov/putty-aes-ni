@@ -4,7 +4,6 @@ image: Visual Studio 2013
 branches:
   only:
   - master
-  - appveyor
   
 environment:
   matrix:
