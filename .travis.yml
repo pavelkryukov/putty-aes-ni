@@ -11,10 +11,22 @@ branches:
   
 compiler:
   - gcc
+  - touch ~/gcc-5; gcc-5
+  - touch ~/gcc-7; gcc-7
   - clang
+
+addons:
+  apt:
+    sources:
+    - ubuntu-toolchain-r-test
+    packages:
+    - gcc-5
+    - gcc-7
 
 before_install:
   - chmod +x aestest/run.sh
+  - if [ -f ~/gcc-5 ] ; then export CC=gcc-5; fi
+  - if [ -f ~/gcc-7 ] ; then export CC=gcc-7; fi
 
 install:
   - pip install --user numpy
