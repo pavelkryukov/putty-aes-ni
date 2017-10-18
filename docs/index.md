@@ -10,14 +10,21 @@
 You may use [Intel® Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI.
 
 ----
-### Authors
+### Contributors
 
-The developers team consisted of:
+The team consisted of:
  * [Pavel Kryukov](https://github.com/pavelkryukov)
  * [Maxim Kuznetsov](https://github.com/mkuznets)
  * [Svyatoslav Kuzmich](https://github.com/skuzmich)
 
-Project is made as [MIPT Cryptography course project](http://radio.fizteh.ru/infsec/). The results were presented in [55th MIPT Conference](http://conf55.mipt.ru/info/main/), "Radio Engineering and Cryptography" section and got a "Best Presentation of Section" achievement.
+----
+### Impact
+
+The project was developed for [MIPT Cryptography course](https://github.com/vlsergey/infosec).
+
+Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
+
+A bug in AES NI code generation was reported to LLVM community ([#34980](https://bugs.llvm.org/show_bug.cgi?id=34980)).
 
 ----
 ### Source code
