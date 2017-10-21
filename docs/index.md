@@ -1,39 +1,29 @@
-[PuTTY](http://www.putty.org/) is one of the few secure applications without support of [AES instruction set](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set) introduced in 2008. PuTTY-AES-NI adds support of these instructions along with demonstration suite to see impact on PuTTY and pscp performance.
+[![Build Status](https://travis-ci.org/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.org/pavelkryukov/putty-aes-ni)[![Build status](https://ci.appveyor.com/api/projects/status/shr6l4t6dvqq5ytk?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty-aes-ni)
+
+This repository contains testing and demonstration suites for AES encryption using [AES instruction set](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set) in [PuTTY](http://www.putty.org/) SSH client.
 
 ---
-### Advantages
+### Motivation
 
 * 4.7x encryption and 13x decryption boost on Intel® Core™ i5-2520M.
-* CPU usage decrease from 50% to 30% for transmission of large files via Secure copy on Intel® Core™ i5-2520M.
+* CPU usage decreases from 50% to 30% for transmission of large files via Secure copy on Intel® Core™ i5-2520M.
 * Attacks on AES via cache miss analysis [[Bangerter et al.](http://eprint.iacr.org/2010/594)] become impossible.
 
 You may use [Intel® Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI.
 
 ----
-### Contributors
+### Impact
 
-The team consisted of:
+PuTTY with new AES instructions was developed as a part of [MIPT Cryptography course](https://github.com/vlsergey/infosec) activity. Te contributors are:
  * [Pavel Kryukov](https://github.com/pavelkryukov)
  * [Maxim Kuznetsov](https://github.com/mkuznets)
  * [Svyatoslav Kuzmich](https://github.com/skuzmich)
 
-----
-### Impact
-
-The project was developed for [MIPT Cryptography course](https://github.com/vlsergey/infosec).
-
 Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
 
+In October 2017, our changes were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git).
+
 A bug in AES NI code generation was reported to LLVM community ([#34980](https://bugs.llvm.org/show_bug.cgi?id=34980)).
-
-----
-### Source code
-
-[![Build Status](https://travis-ci.org/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.org/pavelkryukov/putty-aes-ni)[![Build status](https://ci.appveyor.com/api/projects/status/shr6l4t6dvqq5ytk?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty-aes-ni)
-
-PuTTY-AES-NI code is available in [the additional repository](https://github.com/pavelkryukov/putty-aes-ni2). There are no changes to build flow comparing to the original PuTTY.
-
-[The main repository](https://github.com/pavelkryukov/putty-aes-ni) contains demonstration suite, functional and performance tests, and detailed list of contributions.
 
 ----
 ### Demonstration
