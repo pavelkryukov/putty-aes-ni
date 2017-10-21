@@ -1,1 +1,4 @@
 theme: jekyll-theme-slate
+title: PuTTY AES-NI
+description: AES new instructions in PuTTY
+show_downloads: false
