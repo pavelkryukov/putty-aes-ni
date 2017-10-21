@@ -14,16 +14,24 @@ You may use [Intel® Product Specification Advanced Search](https://ark.intel.co
 ----
 ### Impact
 
-PuTTY with new AES instructions was developed as a part of [MIPT Cryptography course](https://github.com/vlsergey/infosec) activity. Te contributors are:
+PuTTY with new AES instructions was developed as a part of [MIPT Cryptography course](https://github.com/vlsergey/infosec) activity.
+
+Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
+
+In October 2017, our changes were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git) ([2d31305](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=2d31305af9d3bf4096bb0c30e8a8336caaa70673)).
+
+A bug in AES NI code generation was reported to LLVM community ([#34980](https://bugs.llvm.org/show_bug.cgi?id=34980)).
+
+---
+### Contributors
+
  * [Pavel Kryukov](https://github.com/pavelkryukov)
  * [Maxim Kuznetsov](https://github.com/mkuznets)
  * [Svyatoslav Kuzmich](https://github.com/skuzmich)
 
-Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
-
-In October 2017, our changes were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git).
-
-A bug in AES NI code generation was reported to LLVM community ([#34980](https://bugs.llvm.org/show_bug.cgi?id=34980)).
+We are pleased to thank:
+ * [Sergey Vladimirov](https://github.com/vlsergey) for mentorship of our work in MIPT.
+ * PuTTY creator [Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/) for PuTTY, reviewing our code, and accepting the changes.
 
 ----
 ### Demonstration
