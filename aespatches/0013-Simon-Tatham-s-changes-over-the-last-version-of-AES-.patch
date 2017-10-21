@@ -1,0 +1,665 @@
+From 12c89cce10a2c1d1d5d3f22e487de2e659d75514 Mon Sep 17 00:00:00 2001
+From: Simon Tatham <anakin@pobox.com>
+Date: Sat, 21 Oct 2017 11:38:23 +0300
+Subject: [PATCH] Simon Tatham's changes over the last version of AES-NI
+ repository
+
+---
+ LICENCE  |   3 +-
+ sshaes.c | 377 ++++++++++++++++++++++++++++++++-------------------------------
+ 2 files changed, 191 insertions(+), 189 deletions(-)
+
+diff --git a/LICENCE b/LICENCE
+index 05fbb7d..c473a6a 100644
+--- a/LICENCE
++++ b/LICENCE
+@@ -4,7 +4,8 @@ Portions copyright Robert de Bath, Joris van Rantwijk, Delian
+ Delchev, Andreas Schultz, Jeroen Massar, Wez Furlong, Nicolas Barry,
+ Justin Bradford, Ben Harris, Malcolm Smith, Ahmad Khalifa, Markus
+ Kuhn, Colin Watson, Christopher Staite, Lorenz Diener, Christian
+-Brabandt, Jeff Smith, and CORE SDI S.A.
++Brabandt, Jeff Smith, Pavel Kryukov, Maxim Kuznetsov, Svyatoslav
++Kuzmich, and CORE SDI S.A.
+ 
+ Permission is hereby granted, free of charge, to any person
+ obtaining a copy of this software and associated documentation files
+diff --git a/sshaes.c b/sshaes.c
+index 2c4ff4c..7ebeb5b 100644
+--- a/sshaes.c
++++ b/sshaes.c
+@@ -1,4 +1,4 @@
+-/**
++/*
+  * sshaes.c - implementation of AES / Rijndael
+  * 
+  * AES is a flexible algorithm as regards endianness: it has no
+@@ -38,26 +38,26 @@
+ #define mulby2(x) ( ((x&0x7F) << 1) ^ (x & 0x80 ? 0x1B : 0) )
+ 
+ /*
+- * Inline specificator
++ * Select appropriate inline keyword for the compiler
+  */
+-#ifdef __GNUC__
++#if defined __GNUC__ || defined __clang__
+ #    define INLINE __inline__
+ #elif defined (_MSC_VER)
+ #    define INLINE __forceinline
+ #else
+-#    defile INLINE
++#    define INLINE
+ #endif
+ 
+ typedef struct AESContext AESContext;
+ 
+ struct AESContext {
+-    word32 keysched[(MAX_NR + 2) * NB];
+-    word32 invkeysched[(MAX_NR + 2) * NB];
++    word32 keysched_buf[(MAX_NR + 1) * NB + 3];
++    word32 invkeysched_buf[(MAX_NR + 1) * NB + 3];
++    word32 *keysched, *invkeysched;
+     word32 iv[NB];
+-    unsigned int Nr; /* number of rounds */
+-    unsigned int offset; /* offset for aligned key expansion */
+-    void (*encrypt)(unsigned char*, int, AESContext*);
+-    void (*decrypt)(unsigned char*, int, AESContext*);
++    int Nr; /* number of rounds */
++    void (*encrypt_cbc)(unsigned char*, int, AESContext*);
++    void (*decrypt_cbc)(unsigned char*, int, AESContext*);
+     void (*sdctr)(unsigned char*, int, AESContext*);
+     int isNI;
+ };
+@@ -71,12 +71,12 @@ static void aes_setup_ni(AESContext * ctx, unsigned char *key, int keylen);
+ 
+ INLINE static void aes_encrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
+ {
+-    ctx->encrypt(blk, len, ctx);
++    ctx->encrypt_cbc(blk, len, ctx);
+ }
+ 
+ INLINE static void aes_decrypt_cbc(unsigned char *blk, int len, AESContext * ctx)
+ {
+-    ctx->decrypt(blk, len, ctx);
++    ctx->decrypt_cbc(blk, len, ctx);
+ }
+ 
+ INLINE static void aes_sdctr(unsigned char *blk, int len, AESContext * ctx)
+@@ -693,126 +693,137 @@ static const word32 D3[256] = {
+  */
+ static void aes_setup(AESContext * ctx, unsigned char *key, int keylen)
+ {
++    int i, j, Nk, rconst;
++    size_t bufaddr;
++
+     ctx->Nr = 6 + (keylen / 4); /* Number of rounds */
+-    ctx->offset = 16 - ((size_t)ctx % 16);
++
++    /* Ensure the key schedule arrays are 16-byte aligned */
++    bufaddr = (size_t)ctx->keysched_buf;
++    ctx->keysched = ctx->keysched_buf +
++        (0xF & -bufaddr) / sizeof(word32);
++    assert((size_t)ctx->keysched % 16 == 0);
++    bufaddr = (size_t)ctx->invkeysched_buf;
++    ctx->invkeysched = ctx->invkeysched_buf +
++        (0xF & -bufaddr) / sizeof(word32);
++    assert((size_t)ctx->invkeysched % 16 == 0);
++
+     ctx->isNI = supports_aes_ni();
+ 
+-    if (ctx->isNI)
+-    {
++    if (ctx->isNI) {
+         aes_setup_ni(ctx, key, keylen);
++        return;
+     }
+-    else {
+-        int i, j, Nk, rconst;
+-        assert(keylen == 16 || keylen == 24 || keylen == 32);
+-
+-        ctx->encrypt = &aes_encrypt_cbc_sw;
+-        ctx->decrypt = &aes_decrypt_cbc_sw;
+-        ctx->sdctr = &aes_sdctr_sw;
+-
+-        Nk = keylen / 4;
+-        rconst = 1;
+-        for (i = 0; i < (ctx->Nr + 1) * 4; i++) {
+-            if (i < Nk)
+-                ctx->keysched[i] = GET_32BIT_MSB_FIRST(key + 4 * i);
+-            else {
+-                word32 temp = ctx->keysched[i - 1];
+-                if (i % Nk == 0) {
+-                    int a, b, c, d;
+-                    a = (temp >> 16) & 0xFF;
+-                    b = (temp >> 8) & 0xFF;
+-                    c = (temp >> 0) & 0xFF;
+-                    d = (temp >> 24) & 0xFF;
+-                    temp = Sbox[a] ^ rconst;
+-                    temp = (temp << 8) | Sbox[b];
+-                    temp = (temp << 8) | Sbox[c];
+-                    temp = (temp << 8) | Sbox[d];
+-                    rconst = mulby2(rconst);
+-                } else if (i % Nk == 4 && Nk > 6) {
+-                    int a, b, c, d;
+-                    a = (temp >> 24) & 0xFF;
+-                    b = (temp >> 16) & 0xFF;
+-                    c = (temp >> 8) & 0xFF;
+-                    d = (temp >> 0) & 0xFF;
+-                    temp = Sbox[a];
+-                    temp = (temp << 8) | Sbox[b];
+-                    temp = (temp << 8) | Sbox[c];
+-                    temp = (temp << 8) | Sbox[d];
+-                }
+-                ctx->keysched[i] = ctx->keysched[i - Nk] ^ temp;
+-            }
+-        }
+ 
+-        /*
+-         * Now prepare the modified keys for the inverse cipher.
+-         */
+-        for (i = 0; i <= ctx->Nr; i++) {
+-            for (j = 0; j < 4; j++) {
+-                word32 temp;
+-                temp = ctx->keysched[(ctx->Nr - i) * 4 + j];
+-                if (i != 0 && i != ctx->Nr) {
+-                    /*
+-                     * Perform the InvMixColumn operation on i. The D
+-                     * tables give the result of InvMixColumn applied
+-                     * to Sboxinv on individual bytes, so we should
+-                     * compose Sbox with the D tables for this.
+-                     */
+-                    int a, b, c, d;
+-                    a = (temp >> 24) & 0xFF;
+-                    b = (temp >> 16) & 0xFF;
+-                    c = (temp >> 8) & 0xFF;
+-                    d = (temp >> 0) & 0xFF;
+-                    temp = D0[Sbox[a]];
+-                    temp ^= D1[Sbox[b]];
+-                    temp ^= D2[Sbox[c]];
+-                    temp ^= D3[Sbox[d]];
+-                }
+-                ctx->invkeysched[i * 4 + j] = temp;
+-            }
+-        }
++    assert(keylen == 16 || keylen == 24 || keylen == 32);
++
++    ctx->encrypt_cbc = aes_encrypt_cbc_sw;
++    ctx->decrypt_cbc = aes_decrypt_cbc_sw;
++    ctx->sdctr = aes_sdctr_sw;
++
++    Nk = keylen / 4;
++    rconst = 1;
++    for (i = 0; i < (ctx->Nr + 1) * NB; i++) {
++	if (i < Nk)
++	    ctx->keysched[i] = GET_32BIT_MSB_FIRST(key + 4 * i);
++	else {
++	    word32 temp = ctx->keysched[i - 1];
++	    if (i % Nk == 0) {
++		int a, b, c, d;
++		a = (temp >> 16) & 0xFF;
++		b = (temp >> 8) & 0xFF;
++		c = (temp >> 0) & 0xFF;
++		d = (temp >> 24) & 0xFF;
++		temp = Sbox[a] ^ rconst;
++		temp = (temp << 8) | Sbox[b];
++		temp = (temp << 8) | Sbox[c];
++		temp = (temp << 8) | Sbox[d];
++		rconst = mulby2(rconst);
++	    } else if (i % Nk == 4 && Nk > 6) {
++		int a, b, c, d;
++		a = (temp >> 24) & 0xFF;
++		b = (temp >> 16) & 0xFF;
++		c = (temp >> 8) & 0xFF;
++		d = (temp >> 0) & 0xFF;
++		temp = Sbox[a];
++		temp = (temp << 8) | Sbox[b];
++		temp = (temp << 8) | Sbox[c];
++		temp = (temp << 8) | Sbox[d];
++	    }
++	    ctx->keysched[i] = ctx->keysched[i - Nk] ^ temp;
++	}
++    }
++
++    /*
++     * Now prepare the modified keys for the inverse cipher.
++     */
++    for (i = 0; i <= ctx->Nr; i++) {
++        for (j = 0; j < NB; j++) {
++	    word32 temp;
++            temp = ctx->keysched[(ctx->Nr - i) * NB + j];
++	    if (i != 0 && i != ctx->Nr) {
++		/*
++		 * Perform the InvMixColumn operation on i. The D
++		 * tables give the result of InvMixColumn applied
++		 * to Sboxinv on individual bytes, so we should
++		 * compose Sbox with the D tables for this.
++		 */
++		int a, b, c, d;
++		a = (temp >> 24) & 0xFF;
++		b = (temp >> 16) & 0xFF;
++		c = (temp >> 8) & 0xFF;
++		d = (temp >> 0) & 0xFF;
++		temp = D0[Sbox[a]];
++		temp ^= D1[Sbox[b]];
++		temp ^= D2[Sbox[c]];
++		temp ^= D3[Sbox[d]];
++	    }
++            ctx->invkeysched[i * NB + j] = temp;
++	}
+     }
+ }
+ 
+ /*
+  * Software encrypt/decrypt macros
+  */
+-#define ADD_ROUND_KEY (block[0]^=*keysched++,\
+-                       block[1]^=*keysched++,\
+-                       block[2]^=*keysched++,\
++#define ADD_ROUND_KEY (block[0]^=*keysched++,   \
++                       block[1]^=*keysched++,   \
++                       block[2]^=*keysched++,   \
+                        block[3]^=*keysched++)
+ #define MOVEWORD(i) ( block[i] = newstate[i] )
+ 
+-#define ENCWORD(i) ( newstate[i] = (E0[(block[i      ] >> 24) & 0xFF] ^ \
+-                                    E1[(block[(i+1)&3] >> 16) & 0xFF] ^ \
+-                                    E2[(block[(i+2)&3] >>  8) & 0xFF] ^ \
+-                                    E3[ block[(i+3)&3]        & 0xFF]) )
+-#define ENCROUND { ENCWORD(0); ENCWORD(1); ENCWORD(2); ENCWORD(3); \
+-                   MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
+-
+-#define ENCLASTWORD(i) ( newstate[i] = \
+-                            (Sbox[(block[i]       >> 24) & 0xFF] << 24) | \
+-                            (Sbox[(block[(i+1)&3] >> 16) & 0xFF] << 16) | \
+-                            (Sbox[(block[(i+2)&3] >>  8) & 0xFF] <<  8) | \
+-                            (Sbox[(block[(i+3)&3]      ) & 0xFF]      ) )
++#define ENCWORD(i) ( newstate[i] = (E0[(block[i       ] >> 24) & 0xFF] ^ \
++                                    E1[(block[(i+1)%NB] >> 16) & 0xFF] ^ \
++                                    E2[(block[(i+2)%NB] >>  8) & 0xFF] ^ \
++                                    E3[ block[(i+3)%NB]        & 0xFF]) )
++#define ENCROUND { ENCWORD(0); ENCWORD(1); ENCWORD(2); ENCWORD(3);      \
++        MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
++
++#define ENCLASTWORD(i) ( newstate[i] =                                  \
++                         (Sbox[(block[i]        >> 24) & 0xFF] << 24) |  \
++                         (Sbox[(block[(i+1)%NB] >> 16) & 0xFF] << 16) |  \
++                         (Sbox[(block[(i+2)%NB] >>  8) & 0xFF] <<  8) |  \
++                         (Sbox[(block[(i+3)%NB]      ) & 0xFF]      ) )
+ #define ENCLASTROUND { ENCLASTWORD(0); ENCLASTWORD(1); ENCLASTWORD(2); ENCLASTWORD(3); \
+-                   MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
+-
+-#define DECWORD(i) ( newstate[i] =  (D0[(block[i]       >> 24) & 0xFF] ^ \
+-                                     D1[(block[(i+3)&3] >> 16) & 0xFF] ^ \
+-                                     D2[(block[(i+2)&3] >> 8)  & 0xFF] ^ \
+-                                     D3[ block[(i+1)&3]        & 0xFF]) )
+-#define DECROUND { DECWORD(0); DECWORD(1); DECWORD(2); DECWORD(3); \
+-                   MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
+-
+-#define DECLASTWORD(i) (newstate[i] = \
+-                           (Sboxinv[(block[i]       >> 24) & 0xFF] << 24) | \
+-                           (Sboxinv[(block[(i+3)&3] >> 16) & 0xFF] << 16) | \
+-                           (Sboxinv[(block[(i+2)&3] >>  8) & 0xFF] <<  8) | \
+-                           (Sboxinv[(block[(i+1)&3]      ) & 0xFF]      ) )
++        MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
++
++#define DECWORD(i) ( newstate[i] =  (D0[(block[i]        >> 24) & 0xFF] ^ \
++                                     D1[(block[(i+3)%NB] >> 16) & 0xFF] ^ \
++                                     D2[(block[(i+2)%NB] >> 8)  & 0xFF] ^ \
++                                     D3[ block[(i+1)%NB]        & 0xFF]) )
++#define DECROUND { DECWORD(0); DECWORD(1); DECWORD(2); DECWORD(3);      \
++        MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
++
++#define DECLASTWORD(i) (newstate[i] =                                   \
++                        (Sboxinv[(block[i]        >> 24) & 0xFF] << 24) | \
++                        (Sboxinv[(block[(i+3)%NB] >> 16) & 0xFF] << 16) | \
++                        (Sboxinv[(block[(i+2)%NB] >>  8) & 0xFF] <<  8) | \
++                        (Sboxinv[(block[(i+1)%NB]      ) & 0xFF]      ) )
+ #define DECLASTROUND { DECLASTWORD(0); DECLASTWORD(1); DECLASTWORD(2); DECLASTWORD(3); \
+-                   MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
++        MOVEWORD(0); MOVEWORD(1); MOVEWORD(2); MOVEWORD(3); ADD_ROUND_KEY; }
+ 
+ /*
+- * Software AES encrypt/dectypt core
++ * Software AES encrypt/decrypt core
+  */
+ static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
+ {
+@@ -827,18 +838,17 @@ static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
+     while (blk < finish) {
+         word32 *keysched = ctx->keysched;
+         word32 newstate[4];
+-        for (i = 0; i < 4; i++)
++	for (i = 0; i < 4; i++)
+             block[i] ^= GET_32BIT_MSB_FIRST(blk + 4 * i);
+         ADD_ROUND_KEY;
+-        switch (ctx->Nr)
+-        {
+-        case 14:
++        switch (ctx->Nr) {
++          case 14:
+             ENCROUND;
+             ENCROUND;
+-        case 12:
++          case 12:
+             ENCROUND;
+             ENCROUND;
+-        case 10:
++          case 10:
+             ENCROUND;
+             ENCROUND;
+             ENCROUND;
+@@ -850,12 +860,12 @@ static void aes_encrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
+             ENCROUND;
+             ENCLASTROUND;
+             break;
+-        default:
++          default:
+             assert(0);
+         }
+-        for (i = 0; i < 4; i++)
++	for (i = 0; i < 4; i++)
+             PUT_32BIT_MSB_FIRST(blk + 4 * i, block[i]);
+-        blk += 16;
++	blk += 16;
+     }
+ 
+     memcpy(ctx->iv, block, sizeof(block));
+@@ -876,15 +886,14 @@ static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
+         word32 newstate[4], block[4], tmp;
+         memcpy(block, iv, sizeof(block));
+         ADD_ROUND_KEY;
+-        switch (ctx->Nr)
+-        {
+-        case 14:
++        switch (ctx->Nr) {
++          case 14:
+             ENCROUND;
+             ENCROUND;
+-        case 12:
++          case 12:
+             ENCROUND;
+             ENCROUND;
+-        case 10:
++          case 10:
+             ENCROUND;
+             ENCROUND;
+             ENCROUND;
+@@ -896,17 +905,17 @@ static void aes_sdctr_sw(unsigned char *blk, int len, AESContext *ctx)
+             ENCROUND;
+             ENCLASTROUND;
+             break;
+-        default:
++          default:
+             assert(0);
+         }
+-        for (i = 0; i < 4; i++) {
++	for (i = 0; i < 4; i++) {
+             tmp = GET_32BIT_MSB_FIRST(blk + 4 * i);
+             PUT_32BIT_MSB_FIRST(blk + 4 * i, tmp ^ block[i]);
+-        }
++	}
+         for (i = 3; i >= 0; i--)
+             if ((iv[i] = (iv[i] + 1) & 0xffffffff) != 0)
+                 break;
+-        blk += 16;
++	blk += 16;
+     }
+ 
+     memcpy(ctx->iv, iv, sizeof(iv));
+@@ -928,15 +937,14 @@ static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
+         for (i = 0; i < 4; i++)
+             block[i] = ct[i] = GET_32BIT_MSB_FIRST(blk + 4 * i);
+         ADD_ROUND_KEY;
+-        switch (ctx->Nr)
+-        {
+-        case 14:
++        switch (ctx->Nr) {
++          case 14:
+             DECROUND;
+             DECROUND;
+-        case 12:
++          case 12:
+             DECROUND;
+             DECROUND;
+-        case 10:
++          case 10:
+             DECROUND;
+             DECROUND;
+             DECROUND;
+@@ -948,14 +956,14 @@ static void aes_decrypt_cbc_sw(unsigned char *blk, int len, AESContext * ctx)
+             DECROUND;
+             DECLASTROUND;
+             break;
+-        default:
++          default:
+             assert(0);
+         }
+-        for (i = 0; i < 4; i++) {
++	for (i = 0; i < 4; i++) {
+             PUT_32BIT_MSB_FIRST(blk + 4 * i, iv[i] ^ block[i]);
+             iv[i] = ct[i];
+-        }
+-        blk += 16;
++	}
++	blk += 16;
+     }
+ 
+     memcpy(ctx->iv, iv, sizeof(iv));
+@@ -1410,7 +1418,7 @@ static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key)
+ }
+ 
+ /*
+- * AES-NI encrypt/dectypt core
++ * AES-NI encrypt/decrypt core
+  */
+ FUNC_ISA
+ static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+@@ -1423,25 +1431,23 @@ static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+ 
+     /* Load IV */
+     enc = _mm_loadu_si128((__m128i*)(ctx->iv));
+-    while (block < finish)
+-    {
++    while (block < finish) {
+         /* Key schedule ptr   */
+-        __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
++        __m128i* keysched = (__m128i*)ctx->keysched;
+ 
+         /* Xor data with IV */
+         enc  = _mm_xor_si128(_mm_loadu_si128(block), enc);
+ 
+         /* Perform rounds */
+         enc  = _mm_xor_si128(enc, *keysched);
+-        switch (ctx->Nr)
+-        {
+-        case 14:
++        switch (ctx->Nr) {
++          case 14:
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+-        case 12:
++          case 12:
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+-        case 10:
++          case 10:
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+@@ -1453,7 +1459,7 @@ static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenclast_si128(enc, *(++keysched));
+             break;
+-        default:
++          default:
+             assert(0);
+         }
+ 
+@@ -1478,21 +1484,19 @@ static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+ 
+     /* Load IV */
+     iv = _mm_loadu_si128((__m128i*)(ctx->iv));
+-    while (block < finish)
+-    {
++    while (block < finish) {
+         /* Key schedule ptr   */
+-        __m128i* keysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
++        __m128i* keysched = (__m128i*)ctx->invkeysched;
+         last = _mm_loadu_si128(block);
+         dec  = _mm_xor_si128(last, *keysched);
+-        switch (ctx->Nr)
+-        {
+-        case 14:
++        switch (ctx->Nr) {
++          case 14:
+             dec = _mm_aesdec_si128(dec, *(++keysched));
+             dec = _mm_aesdec_si128(dec, *(++keysched));
+-        case 12:
++          case 12:
+             dec = _mm_aesdec_si128(dec, *(++keysched));
+             dec = _mm_aesdec_si128(dec, *(++keysched));
+-        case 10:
++          case 10:
+             dec = _mm_aesdec_si128(dec, *(++keysched));
+             dec = _mm_aesdec_si128(dec, *(++keysched));
+             dec = _mm_aesdec_si128(dec, *(++keysched));
+@@ -1504,7 +1508,7 @@ static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+             dec = _mm_aesdec_si128(dec, *(++keysched));
+             dec = _mm_aesdeclast_si128(dec, *(++keysched));
+             break;
+-        default:
++          default:
+             assert(0);
+         }
+ 
+@@ -1537,22 +1541,20 @@ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
+ 
+     iv = _mm_loadu_si128((__m128i*)ctx->iv);
+ 
+-    while (block < finish)
+-    {
++    while (block < finish) {
+         __m128i enc;
+-        __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);/* Key schedule ptr   */
++        __m128i* keysched = (__m128i*)ctx->keysched;/* Key schedule ptr   */
+ 
+         /* Perform rounds */
+         enc  = _mm_xor_si128(iv, *keysched); /* Note that we use IV */
+-        switch (ctx->Nr)
+-        {
+-        case 14:
++        switch (ctx->Nr) {
++          case 14:
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+-        case 12:
++          case 12:
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+-        case 10:
++          case 10:
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+@@ -1564,7 +1566,7 @@ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
+             enc = _mm_aesenc_si128(enc, *(++keysched));
+             enc = _mm_aesenclast_si128(enc, *(++keysched));
+             break;
+-        default:
++          default:
+             assert(0);
+         }
+ 
+@@ -1591,8 +1593,8 @@ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
+ FUNC_ISA
+ static void aes_inv_key_10(AESContext * ctx)
+ {
+-    __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+-    __m128i* invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
++    __m128i* keysched = (__m128i*)ctx->keysched;
++    __m128i* invkeysched = (__m128i*)ctx->invkeysched;
+ 
+     *(invkeysched + 10) = *(keysched + 0);
+     *(invkeysched + 9) = _mm_aesimc_si128(*(keysched + 1));
+@@ -1610,8 +1612,8 @@ static void aes_inv_key_10(AESContext * ctx)
+ FUNC_ISA
+ static void aes_inv_key_12(AESContext * ctx)
+ {
+-    __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+-    __m128i* invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
++    __m128i* keysched = (__m128i*)ctx->keysched;
++    __m128i* invkeysched = (__m128i*)ctx->invkeysched;
+ 
+     *(invkeysched + 12) = *(keysched + 0);
+     *(invkeysched + 11) = _mm_aesimc_si128(*(keysched + 1));
+@@ -1631,8 +1633,8 @@ static void aes_inv_key_12(AESContext * ctx)
+ FUNC_ISA
+ static void aes_inv_key_14(AESContext * ctx)
+ {
+-    __m128i* keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+-    __m128i* invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
++    __m128i* keysched = (__m128i*)ctx->keysched;
++    __m128i* invkeysched = (__m128i*)ctx->invkeysched;
+ 
+     *(invkeysched + 14) = *(keysched + 0);
+     *(invkeysched + 13) = _mm_aesimc_si128(*(keysched + 1));
+@@ -1659,27 +1661,26 @@ static void aes_inv_key_14(AESContext * ctx)
+ FUNC_ISA
+ static void aes_setup_ni(AESContext * ctx, unsigned char *key, int keylen)
+ {
+-    __m128i *keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
++    __m128i *keysched = (__m128i*)ctx->keysched;
+ 
+-    ctx->encrypt = &aes_encrypt_cbc_ni;
+-    ctx->decrypt = &aes_decrypt_cbc_ni;
+-    ctx->sdctr = &aes_sdctr_ni;
++    ctx->encrypt_cbc = aes_encrypt_cbc_ni;
++    ctx->decrypt_cbc = aes_decrypt_cbc_ni;
++    ctx->sdctr = aes_sdctr_ni;
+ 
+     /*
+      * Now do the key setup itself.
+      */
+-    switch (keylen)
+-    {
+-    case 16:
++    switch (keylen) {
++      case 16:
+         AES_128_Key_Expansion (key, keysched);
+         break;
+-    case 24:
++      case 24:
+         AES_192_Key_Expansion (key, keysched);
+         break;
+-    case 32:
++      case 32:
+         AES_256_Key_Expansion (key, keysched);
+         break;
+-    default:
++      default:
+         assert(0);
+     }
+ 
+@@ -1687,16 +1688,16 @@ static void aes_setup_ni(AESContext * ctx, unsigned char *key, int keylen)
+      * Now prepare the modified keys for the inverse cipher.
+      */
+     switch (ctx->Nr) {
+-    case 10:
++      case 10:
+         aes_inv_key_10(ctx);
+         break;
+-    case 12:
++      case 12:
+         aes_inv_key_12(ctx);
+         break;
+-    case 14:
++      case 14:
+         aes_inv_key_14(ctx);
+         break;
+-    default:
++      default:
+         assert(0);
+     }
+ }
+-- 
+2.5.3.windows.1
+

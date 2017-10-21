@@ -1,0 +1,27 @@
+From 870eb9c88bce74c795d88390244230f01df87c83 Mon Sep 17 00:00:00 2001
+From: "Pavel I. Kryukov" <kryukov@frtk.ru>
+Date: Sun, 15 Oct 2017 18:42:13 +0300
+Subject: [PATCH 10/12] Remove unused variables
+
+---
+ sshaes.c | 4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
+
+diff --git a/sshaes.c b/sshaes.c
+index bb05e8d..bb6925e 100644
+--- a/sshaes.c
++++ b/sshaes.c
+@@ -1656,9 +1656,7 @@ static void aes_inv_key_14(AESContext * ctx)
+ FUNC_ISA
+ static void aes_setup_ni(AESContext * ctx, unsigned char *key, int keylen)
+ {
+-    __m128i *keysched, *invkeysched;
+-    keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+-    invkeysched = (__m128i*)((unsigned char*)ctx->invkeysched + ctx->offset);
++    __m128i *keysched = (__m128i*)((unsigned char*)ctx->keysched + ctx->offset);
+ 
+     ctx->encrypt = &aes_encrypt_cbc_ni;
+     ctx->decrypt = &aes_decrypt_cbc_ni;
+-- 
+2.5.3.windows.1
+

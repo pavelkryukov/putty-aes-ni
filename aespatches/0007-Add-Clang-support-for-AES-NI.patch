@@ -1,0 +1,182 @@
+From 3f84eb79a90fd01071c74df15de2b8027fbdf7ca Mon Sep 17 00:00:00 2001
+From: "Pavel I. Kryukov" <kryukov@frtk.ru>
+Date: Sun, 15 Oct 2017 13:15:00 +0300
+Subject: [PATCH 07/12] Add Clang support for AES-NI
+
+---
+ sshaes.c | 52 ++++++++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 42 insertions(+), 10 deletions(-)
+
+diff --git a/sshaes.c b/sshaes.c
+index 5bdf38d..c148e19 100644
+--- a/sshaes.c
++++ b/sshaes.c
+@@ -1125,8 +1125,12 @@ const struct ssh2_ciphers ssh2_aes = {
+  */
+ #ifdef _FORCE_AES_NI
+ #   define COMPILER_SUPPORTS_AES_NI
++#elif defined(__clang__)
++#   if (__clang_major__ > 3 || (__clang_major__ == 3 && __clang_minor__ >= 8)) && (defined(__x86_64__) || defined(__i386))
++#       define COMPILER_SUPPORTS_AES_NI
++#   endif
+ #elif defined(__GNUC__)
+-#    if ((__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 4))) && (defined(__x86_64__) || defined(__i386))
++#    if (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 4)) && (defined(__x86_64__) || defined(__i386))
+ #       define COMPILER_SUPPORTS_AES_NI
+ #    endif
+ #elif defined (_MSC_VER)
+@@ -1139,16 +1143,22 @@ const struct ssh2_ciphers ssh2_aes = {
+ #   undef COMPILER_SUPPORTS_AES_NI
+ #endif
+ 
+-#if defined(COMPILER_SUPPORTS_AES_NI) && defined(__GNUC__)
+-#   pragma GCC target("aes")
+-#   pragma GCC target("sse4.1")
++#ifdef COMPILER_SUPPORTS_AES_NI
++
++#if !defined(__clang__) && defined (__GNUC__)
++#    pragma GCC target("aes")
++#    pragma GCC target("sse4.1")
+ #endif
+ 
+-#ifdef COMPILER_SUPPORTS_AES_NI
+-#  include <wmmintrin.h>
+-#  include <smmintrin.h>
++#if defined(__clang__)
++#   define FUNC_ISA __attribute__ ((target("sse4.1,aes")))
++#else
++#   define FUNC_ISA
+ #endif
+ 
++#include <wmmintrin.h>
++#include <smmintrin.h>
++
+ /*
+  * Determinators of CPU type
+  */
+@@ -1167,7 +1177,18 @@ INLINE static void __cpuid(unsigned int* CPUInfo, int func)
+ }
+ #endif
+ 
+-#ifdef COMPILER_SUPPORTS_AES_NI
++#if defined(__clang__) || defined(__GNUC__)
++
++#include <cpuid.h>
++INLINE static int supports_aes_ni()
++{
++    unsigned int CPUInfo[4];
++    __cpuid(1, CPUInfo[0], CPUInfo[1], CPUInfo[2], CPUInfo[3]);
++    return CPUInfo[2] & (1 << 25);
++}
++
++#else /* defined(__clang__) || defined(__GNUC__) */
++
+ INLINE static int supports_aes_ni()
+ {
+     unsigned int CPUInfo[4];
+@@ -1175,6 +1196,8 @@ INLINE static int supports_aes_ni()
+     return CPUInfo[2] & (1 << 25);
+ }
+ 
++#endif /* defined(__clang__) || defined(__GNUC__) */
++
+ /*
+  * Wrapper of SHUFPD instruction for MSVC
+  */
+@@ -1206,12 +1229,11 @@ INLINE static __m128i mm_shuffle_pd_i1(__m128i a, __m128i b)
+ #define mm_shuffle_pd_i0(a, b) ((__m128i)_mm_shuffle_pd((__m128d)a, (__m128d)b, 0));
+ #define mm_shuffle_pd_i1(a, b) ((__m128i)_mm_shuffle_pd((__m128d)a, (__m128d)b, 1));
+ #endif
+-#endif
+ 
+ /*
+  * AES-NI key expansion assist functions
+  */
+-#ifdef COMPILER_SUPPORTS_AES_NI
++FUNC_ISA
+ INLINE static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
+ {
+     __m128i temp3;
+@@ -1226,6 +1248,7 @@ INLINE static __m128i AES_128_ASSIST (__m128i temp1, __m128i temp2)
+     return temp1;
+ }
+ 
++FUNC_ISA
+ INLINE static void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * temp3)
+ {
+     __m128i temp4;
+@@ -1243,6 +1266,7 @@ INLINE static void KEY_192_ASSIST(__m128i* temp1, __m128i * temp2, __m128i * tem
+     *temp3 = _mm_xor_si128 (*temp3, *temp2);
+ }
+ 
++FUNC_ISA
+ INLINE static void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2)
+ {
+     __m128i temp4;
+@@ -1256,6 +1280,7 @@ INLINE static void KEY_256_ASSIST_1(__m128i* temp1, __m128i * temp2)
+     *temp1 = _mm_xor_si128 (*temp1, *temp2);
+ }
+ 
++FUNC_ISA
+ INLINE static void KEY_256_ASSIST_2(__m128i* temp1, __m128i * temp3)
+ {
+     __m128i temp2,temp4;
+@@ -1273,6 +1298,7 @@ INLINE static void KEY_256_ASSIST_2(__m128i* temp1, __m128i * temp3)
+ /*
+  * AES-NI key expansion core
+  */
++FUNC_ISA
+ static void AES_128_Key_Expansion (unsigned char *userkey, __m128i *key)
+ {
+     __m128i temp1, temp2;
+@@ -1310,6 +1336,7 @@ static void AES_128_Key_Expansion (unsigned char *userkey, __m128i *key)
+     key[10] = temp1;
+ }
+ 
++FUNC_ISA
+ static void AES_192_Key_Expansion (unsigned char *userkey, __m128i *key)
+ {
+     __m128i temp1, temp2, temp3;
+@@ -1351,6 +1378,7 @@ static void AES_192_Key_Expansion (unsigned char *userkey, __m128i *key)
+     key[13]=temp3;
+ }
+ 
++FUNC_ISA
+ static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key)
+ {
+     __m128i temp1, temp2, temp3;
+@@ -1396,6 +1424,7 @@ static void AES_256_Key_Expansion (unsigned char *userkey, __m128i *key)
+ /*
+  * AES-NI encrypt/dectypt core
+  */
++FUNC_ISA
+ static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+ {
+     __m128i enc;
+@@ -1449,6 +1478,7 @@ static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+     _mm_storeu_si128((__m128i*)(ctx->iv), enc);
+ }
+ 
++FUNC_ISA
+ static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+ {
+     __m128i dec = _mm_setzero_si128();
+@@ -1505,6 +1535,7 @@ static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+     _mm_storeu_si128((__m128i*)(ctx->iv), dec);
+ }
+ 
++FUNC_ISA
+ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
+ {
+     const __m128i BSWAP_EPI64 = _mm_setr_epi8(3,2,1,0,7,6,5,4,11,10,9,8,15,14,13,12);
+@@ -1574,6 +1605,7 @@ static void aes_sdctr_ni(unsigned char *blk, int len, AESContext *ctx)
+  * bytes; it can be either 16 (128-bit), 24 (192-bit), or 32
+  * (256-bit).
+  */
++FUNC_ISA
+ static void aes_setup_ni(AESContext * ctx, unsigned char *key, int keylen)
+ {
+     __m128i *keysched, *invkeysched;
+-- 
+2.5.3.windows.1
+

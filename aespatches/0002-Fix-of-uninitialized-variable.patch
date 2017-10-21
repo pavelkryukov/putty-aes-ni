@@ -1,0 +1,26 @@
+From b96bf04fa534b97711252ee1c7866deb114a5da2 Mon Sep 17 00:00:00 2001
+From: Pavel Kryukov <kryukov@frtk.ru>
+Date: Sat, 14 Mar 2015 19:39:17 +0000
+Subject: [PATCH 02/12] Fix of uninitialized variable
+
+---
+ sshaes.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/sshaes.c b/sshaes.c
+index 767948b..ac8964b 100644
+--- a/sshaes.c
++++ b/sshaes.c
+@@ -1182,7 +1182,8 @@ static void aes_encrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+ 
+ static void aes_decrypt_cbc_ni(unsigned char *blk, int len, AESContext * ctx)
+ {
+-    __m128i dec, last, iv;
++    __m128i dec = _mm_setzero_si128();
++    __m128i last, iv;
+     __m128i* block = (__m128i*)blk;
+     const __m128i* finish = (__m128i*)(blk + len);
+ 
+-- 
+2.5.3.windows.1
+

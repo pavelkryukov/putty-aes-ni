@@ -1,0 +1,25 @@
+From 9508ee36838d1d675e95e70c16cdaa1252723831 Mon Sep 17 00:00:00 2001
+From: "Pavel I. Kryukov" <kryukov@frtk.ru>
+Date: Thu, 12 Oct 2017 22:15:38 +0300
+Subject: [PATCH 03/12] Support conditional build of AES-NI by GCC
+
+---
+ sshaes.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/sshaes.c b/sshaes.c
+index ac8964b..5d9ef69 100644
+--- a/sshaes.c
++++ b/sshaes.c
+@@ -45,6 +45,8 @@
+ #   define COMPILER_SUPPORTS_AES_NI
+ #elif defined(__GNUC__)
+ #    if (__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 4))
++#       pragma GCC target("aes")
++#       pragma GCC target("sse4.1")
+ #       define COMPILER_SUPPORTS_AES_NI
+ #    endif
+ #elif defined (_MSC_VER)
+-- 
+2.5.3.windows.1
+

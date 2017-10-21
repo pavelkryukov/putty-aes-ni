@@ -1,0 +1,38 @@
+From 758b3330332e7da77cbeb8aa98d846e9fbd951db Mon Sep 17 00:00:00 2001
+From: "Pavel I. Kryukov" <kryukov@frtk.ru>
+Date: Sun, 15 Oct 2017 14:28:01 +0300
+Subject: [PATCH 08/12] Delete bogus __cpuid function
+
+---
+ sshaes.c | 15 ---------------
+ 1 file changed, 15 deletions(-)
+
+diff --git a/sshaes.c b/sshaes.c
+index c148e19..ab2487b 100644
+--- a/sshaes.c
++++ b/sshaes.c
+@@ -1162,21 +1162,6 @@ const struct ssh2_ciphers ssh2_aes = {
+ /*
+  * Determinators of CPU type
+  */
+-#if defined(__GNUC__) && defined(COMPILER_SUPPORTS_AES_NI)
+-INLINE static void __cpuid(unsigned int* CPUInfo, int func)
+-{
+-    __asm__ __volatile__
+-    (
+-        "cpuid"
+-        : "=a" (CPUInfo[0])
+-        , "=b" (CPUInfo[1])
+-        , "=c" (CPUInfo[2])
+-        , "=d" (CPUInfo[3])
+-        : "a"  (func)
+-    );
+-}
+-#endif
+-
+ #if defined(__clang__) || defined(__GNUC__)
+ 
+ #include <cpuid.h>
+-- 
+2.5.3.windows.1
+

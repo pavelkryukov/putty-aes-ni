@@ -1,0 +1,40 @@
+From 76337a902c0749946f949c0429d74c900993c08c Mon Sep 17 00:00:00 2001
+From: pavelkryukov <kryukov@frtk.ru>
+Date: Mon, 16 Oct 2017 13:32:28 +0300
+Subject: [PATCH 12/12] Use FUNC_ISA macro for GCC as pragmas don't work with
+ GCC 5
+
+---
+ sshaes.c | 11 +++++++----
+ 1 file changed, 7 insertions(+), 4 deletions(-)
+
+diff --git a/sshaes.c b/sshaes.c
+index 5152bc6..2c4ff4c 100644
+--- a/sshaes.c
++++ b/sshaes.c
+@@ -1145,15 +1145,18 @@ const struct ssh2_ciphers ssh2_aes = {
+ 
+ #ifdef COMPILER_SUPPORTS_AES_NI
+ 
+-#if !defined(__clang__) && defined (__GNUC__)
++/*
++ * Set target architecture for Clang and GCC
++ */
++#if !defined(__clang__) && defined(__GNUC__)
+ #    pragma GCC target("aes")
+ #    pragma GCC target("sse4.1")
+ #endif
+ 
+-#if defined(__clang__)
+-#   define FUNC_ISA __attribute__ ((target("sse4.1,aes")))
++#if defined(__clang__) || (defined(__GNUC__) && (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)))
++#    define FUNC_ISA __attribute__ ((target("sse4.1,aes")))
+ #else
+-#   define FUNC_ISA
++#    define FUNC_ISA
+ #endif
+ 
+ #include <wmmintrin.h>
+-- 
+2.5.3.windows.1
+

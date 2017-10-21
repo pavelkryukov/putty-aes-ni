@@ -1,0 +1,32 @@
+From bc9a7f2d406ef66008f750774ba3b1b483e19ba0 Mon Sep 17 00:00:00 2001
+From: Pavel Kryukov <kryukov@frtk.ru>
+Date: Thu, 12 Oct 2017 23:31:51 +0300
+Subject: [PATCH 04/12] Check target ISA while before building AES-NI code
+
+---
+ sshaes.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/sshaes.c b/sshaes.c
+index 5d9ef69..a347d9a 100644
+--- a/sshaes.c
++++ b/sshaes.c
+@@ -44,13 +44,13 @@
+ #ifdef _FORCE_AES_NI
+ #   define COMPILER_SUPPORTS_AES_NI
+ #elif defined(__GNUC__)
+-#    if (__GNUC__ > 4) || (__GNUC__ == 4 && (__GNUC_MINOR__ >= 4))
++#    ifdef __AES__
+ #       pragma GCC target("aes")
+ #       pragma GCC target("sse4.1")
+ #       define COMPILER_SUPPORTS_AES_NI
+ #    endif
+ #elif defined (_MSC_VER)
+-#   if _MSC_FULL_VER >= 150030729
++#   if (defined(_M_X64) || defined(_M_IX86)) && _MSC_FULL_VER >= 150030729
+ #      define COMPILER_SUPPORTS_AES_NI
+ #   endif
+ #endif
+-- 
+2.5.3.windows.1
+
