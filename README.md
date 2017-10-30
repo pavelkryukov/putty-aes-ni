@@ -2,7 +2,6 @@
 
 This repository contains testing and demonstration suites for AES encryption using [AES instruction set](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set) in [PuTTY](http://www.putty.org/) SSH client.
 
----
 ### Motivation
 
 * 4.7x encryption and 13x decryption boost on Intel® Core™ i5-2520M.
@@ -11,7 +10,6 @@ This repository contains testing and demonstration suites for AES encryption usi
 
 You may use [Intel® Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI.
 
-----
 ### Impact
 
 PuTTY with new AES instructions was developed as a part of [MIPT Cryptography course](https://github.com/vlsergey/infosec) activity.
@@ -22,7 +20,6 @@ In October 2017, our changes were merged to [the main PuTTY repository](https://
 
 A bug in AES NI code generation was reported to LLVM community ([#34980](https://bugs.llvm.org/show_bug.cgi?id=34980)).
 
----
 ### Contributors
 
  * [Pavel Kryukov](https://github.com/pavelkryukov)
@@ -33,7 +30,6 @@ We are pleased to thank:
  * [Sergey Vladimirov](https://github.com/vlsergey) for mentorship of our work in MIPT.
  * PuTTY creator [Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/) for PuTTY, reviewing our code, and accepting the changes.
 
-----
 ### Demonstration
 
 To verify boost of AES-NI algorithm, one may create standalone encryptor and decryptor. After cloning repository and PuTTY, they can be build `aestest` dir using Makefile targets:
@@ -46,7 +42,6 @@ To verify boost of AES-NI algorithm, one may create standalone encryptor and dec
 Syntax is the same as 'cp' command. Please note that file size must be a multiple of 16 bytes.
 `<sshdemo> src dst`
 
-----
 ### Performance tests
 
 To run performance test, use `./run.sh -p` in `aestest` dir. Be sure that CPU supports AES-NI (Checking for AES-NI support... found). The output is geometric mean of speedups per encryption/decryption of different data sets with memory range from 16 bytes to 256 Mbytes.
@@ -54,15 +49,12 @@ Optimization of both AES algorithms is enabled, to turn it off, change $(OPT) to
 
 Performance data is stored to `perf-original.txt` and `perf-output.txt`, the first one is for standard version, second is for AES-NI version. Format of output files is following: `code keylen blocklen time`, where code 0 is encryption, code 1 is decryption, and code 2 is sdctr
 
----
 ### Next steps
 
-The following ideas may be used by Information Security course students for their project
-* Support SHA-NI for x86 for PuTTY
-* Support AES-NI for ARM8 for PuTTY
-* Support SHA-NI for ARM8 for PuTTY
+The following ideas may be used by Information Security course students for their projects:
+* Add x86 SHA-NI flows to PuTTY
+* Add ARM SHA and AES flows to PuTTY
 
----
 ### Further Reading
 
 1. [Article with some additional info and links on AES-NI](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-instructions-aes-ni)
