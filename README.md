@@ -55,6 +55,14 @@ Optimization of both AES algorithms is enabled, to turn it off, change $(OPT) to
 Performance data is stored to `perf-original.txt` and `perf-output.txt`, the first one is for standard version, second is for AES-NI version. Format of output files is following: `code keylen blocklen time`, where code 0 is encryption, code 1 is decryption, and code 2 is sdctr
 
 ---
+### Next steps
+
+The following ideas may be used by Information Security course students for their project
+* Support SHA-NI for x86 for PuTTY
+* Support AES-NI for ARM8 for PuTTY
+* Support SHA-NI for ARM8 for PuTTY
+
+---
 ### Further Reading
 
 1. [Article with some additional info and links on AES-NI](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-instructions-aes-ni)
