@@ -31,8 +31,8 @@ We are pleased to thank:
  * PuTTY creator [Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/) for PuTTY, reviewing our code, and accepting the changes.
  
 Detailed contributions to PuTTY code:
- * 2012—2015 contributions are available in [repository history](https://github.com/pavelkryukov/putty-aes-ni/commits/master)
- * 2015-2017 contributions are located in [dedicated directory](https://github.com/pavelkryukov/putty-aes-ni/tree/master/aespatches)
+ * 2012 – 2015 contributions are available in [repository history](https://github.com/pavelkryukov/putty-aes-ni/commits/master)
+ * 2015 – 2017 contributions are located in [dedicated directory](https://github.com/pavelkryukov/putty-aes-ni/tree/master/aespatches)
 
 ### Demonstration
 
