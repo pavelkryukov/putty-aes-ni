@@ -19,10 +19,11 @@ else
 fi
 
 mkdir obj bin txt -p
-make bin/cpuid -s
+make bin/aescpuid -s
+make bin/shacpuid -s
 
 echo -n "[check] AES-NI support... "
-if ./bin/cpuid -q ;
+if ./bin/aescpuid -q ;
 then
     echo "found"
     SDE=""
@@ -40,10 +41,42 @@ else
         fi
 fi
 
-make txt/test-original-$SEEDS.txt txt/test-output-$SEEDS.txt SDE=$SDE -s
+make txt/test-original-aes-$SEEDS.txt txt/test-output-aes-$SEEDS.txt SDE=$SDE -s
 
-original=$(md5sum txt/test-original-$SEEDS.txt | cut -d ' ' -f 1)
-changed=$(md5sum txt/test-output-$SEEDS.txt | cut -d ' ' -f 1)
+original=$(md5sum txt/test-original-aes-$SEEDS.txt | cut -d ' ' -f 1)
+changed=$(md5sum txt/test-output-aes-$SEEDS.txt | cut -d ' ' -f 1)
+
+if [ "$original" = "$changed" ];
+then 
+    echo "********** Tests passed! **************"
+else
+    echo "********** Tests not passed! **************"
+    exit 2
+fi
+
+echo -n "[check] SHA-NI support... "
+if ./bin/shacpuid -q ;
+then
+    echo "found"
+    SDE=""
+else
+    echo "not found"
+    echo -n "[check] SDE... "
+    
+    if [ ! `which sde` ];
+        then
+            echo -e "not found"
+            exit 1
+        else
+            echo "found `sde -version | grep 'Ver' | sed 's/\(.*\)Version\:\( *\)\(.*\)/\3/g'`"
+            SDE="yes"
+        fi
+fi
+
+make txt/test-original-sha-$SEEDS.txt txt/test-output-sha-$SEEDS.txt SDE=$SDE -s
+
+original=$(md5sum txt/test-original-sha-$SEEDS.txt | cut -d ' ' -f 1)
+changed=$(md5sum txt/test-output-sha-$SEEDS.txt | cut -d ' ' -f 1)
 
 if [ "$original" = "$changed" ];
 then 
@@ -58,4 +91,4 @@ then
     exit
 fi
 
-make txt/perf-geomean.txt SDE=$SDE -s && echo -n "Speedup in geomean is: " && cat txt/perf-geomean.txt
+make txt/perf-geomean-aes.txt SDE=$SDE -s && echo -n "Speedup in geomean is: " && cat txt/perf-geomean-aes.txt

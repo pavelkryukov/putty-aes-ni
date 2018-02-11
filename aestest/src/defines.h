@@ -27,6 +27,12 @@ typedef enum
     SDCTR
 } TestType;
 
+typedef enum
+{
+    SHA1,
+    SHA256
+} HashType;
+
 #define DIM(A) (sizeof(A) / sizeof(A[0]))
 
 #endif /* AESTEST_DEFINES_H */
