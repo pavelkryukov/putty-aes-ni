@@ -16,7 +16,7 @@
 #include "coverage.h"
 #include "defines.h"
 
-#ifdef __GNUC__
+#if defined(__GNUC__) && !defined(__clang__)
 static unsigned long long __rdtsc()
 {
     unsigned hi, lo;
