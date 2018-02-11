@@ -19,8 +19,8 @@ else
 fi
 
 mkdir obj bin txt -p
-make bin/aescpuid -s
-make bin/shacpuid -s
+make bin/aescpuid
+make bin/shacpuid
 
 echo -n "[check] AES-NI support... "
 if ./bin/aescpuid -q ;
@@ -33,15 +33,15 @@ else
     
     if [ ! `which sde` ];
         then
-            echo -e "not found"
+            echo "not found"
             exit 1
         else
-            echo "found `sde -version | grep 'Ver' | sed 's/\(.*\)Version\:\( *\)\(.*\)/\3/g'`"
+            echo "found"
             SDE="yes"
         fi
 fi
 
-make txt/test-original-aes-$SEEDS.txt txt/test-output-aes-$SEEDS.txt SDE=$SDE -s
+make txt/test-original-aes-$SEEDS.txt txt/test-output-aes-$SEEDS.txt SDE=$SDE
 
 original=$(md5sum txt/test-original-aes-$SEEDS.txt | cut -d ' ' -f 1)
 changed=$(md5sum txt/test-output-aes-$SEEDS.txt | cut -d ' ' -f 1)
@@ -65,15 +65,14 @@ else
     
     if [ ! `which sde` ];
         then
-            echo -e "not found"
+            echo "found"
             exit 1
         else
-            echo "found `sde -version | grep 'Ver' | sed 's/\(.*\)Version\:\( *\)\(.*\)/\3/g'`"
             SDE="yes"
         fi
 fi
 
-make txt/test-original-sha-$SEEDS.txt txt/test-output-sha-$SEEDS.txt SDE=$SDE -s
+make txt/test-original-sha-$SEEDS.txt txt/test-output-sha-$SEEDS.txt SDE=$SDE
 
 original=$(md5sum txt/test-original-sha-$SEEDS.txt | cut -d ' ' -f 1)
 changed=$(md5sum txt/test-output-sha-$SEEDS.txt | cut -d ' ' -f 1)
@@ -91,4 +90,4 @@ then
     exit
 fi
 
-make txt/perf-geomean-aes.txt SDE=$SDE -s && echo -n "Speedup in geomean is: " && cat txt/perf-geomean-aes.txt
+make txt/perf-geomean-aes.txt SDE=$SDE && echo -n "Speedup in geomean is: " && cat txt/perf-geomean-aes.txt

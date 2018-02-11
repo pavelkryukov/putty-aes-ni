@@ -31,7 +31,6 @@ before_install:
 install:
   - pip install --user numpy
   - wget -q ${SDE_URL}
-  - ls
   - tar xvf ${SDE_ARCHIVE}.tar.bz2
   - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
 

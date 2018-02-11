@@ -26,11 +26,11 @@ endif
 .SECONDARY:
 
 # BINARIES
-$(BIN_DIR)/sshsha-%: $(OBJ_DIR)/sshsha.o $(OBJ_DIR)/sha%.o $(OBJ_DIR)/puttymem.o
+$(BIN_DIR)/sshsha-%: $(OBJ_DIR)/sshsha.o $(OBJ_DIR)/sshsh256.o $(OBJ_DIR)/sha%.o $(OBJ_DIR)/puttymem.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-$(BIN_DIR)/sshshani-%: $(OBJ_DIR)/sshshani.o $(OBJ_DIR)/sha%.o $(OBJ_DIR)/puttymem.o
+$(BIN_DIR)/sshshani-%: $(OBJ_DIR)/sshshani.o $(OBJ_DIR)/sshsh256ni.o $(OBJ_DIR)/sha%.o $(OBJ_DIR)/puttymem.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
@@ -43,11 +43,19 @@ $(BIN_DIR)/sshaesni-%: $(OBJ_DIR)/sshaesni.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttym
 	@$(CC) $(LDFLAGS) $^ -o $@
 
 # Putty OBJECT FILES
-$(OBJ_DIR)/sshsha.o: $(PUTTY)/sshsha.c $(PUTTY)/sshsh256.c $(HEADERS) $(MAKEFILE)
+$(OBJ_DIR)/sshsh256.o: $(PUTTY)/sshsh256.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
 	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY) -D_FORCE_SOFTWARE_SHA
    
-$(OBJ_DIR)/sshshani.o: $(PUTTY)/sshsha.c $(PUTTY)/sshsh256.c  $(HEADERS) $(MAKEFILE)
+$(OBJ_DIR)/sshsh256ni.o: $(PUTTY)/sshsh256ni.c $(HEADERS) $(MAKEFILE)
+	@echo "[$(CC)] $@"
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY)
+
+$(OBJ_DIR)/sshsha.o: $(PUTTY)/sshsha.c $(HEADERS) $(MAKEFILE)
+	@echo "[$(CC)] $@"
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY) -D_FORCE_SOFTWARE_SHA
+   
+$(OBJ_DIR)/sshshani.o: $(PUTTY)/sshsha.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
 	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY)
     
