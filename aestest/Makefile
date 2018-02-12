@@ -94,7 +94,7 @@ $(TXT_DIR)/test-original-aes-%.txt: $(BIN_DIR)/sshaes-test
 
 $(TXT_DIR)/test-output-aes-%.txt: $(BIN_DIR)/sshaesni-test
 	@echo "[run] $@"
-	@$(SDERUN) $^ $*
+	$(SDERUN) $^ $*
 	@mv test-output.txt $@
 
 $(TXT_DIR)/test-original-sha-%.txt: $(BIN_DIR)/sshsha-test
@@ -104,7 +104,7 @@ $(TXT_DIR)/test-original-sha-%.txt: $(BIN_DIR)/sshsha-test
 
 $(TXT_DIR)/test-output-sha-%.txt: $(BIN_DIR)/sshsha-test
 	@echo "[run] $@"
-	@$(SDERUN) $^ $*
+	$(SDERUN) $^ $*
 	@mv test-output.txt $@
     
 # Performance outputs
