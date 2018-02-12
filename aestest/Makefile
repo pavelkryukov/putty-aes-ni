@@ -18,7 +18,7 @@ HEADERS=$(SRC_DIR)/coverage.h $(SRC_DIR)/defines.h
 MAKEFILE=Makefile
 
 ifeq ($(SDE), yes)
-	SDERUN=sde --
+	SDERUN=$(SDE_PATH) --
 else
 	SDERUN=
 endif
