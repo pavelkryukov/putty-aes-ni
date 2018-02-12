@@ -68,6 +68,7 @@ else
             echo "found"
             exit 1
         else
+            echo "not found"
             SDE="yes"
         fi
 fi
