@@ -41,7 +41,7 @@ else
         fi
 fi
 
-make txt/test-original-aes-$SEEDS.txt txt/test-output-aes-$SEEDS.txt SDE=$SDE
+make txt/test-original-aes-$SEEDS.txt txt/test-output-aes-$SEEDS.txt SDE=$SDE SDE_PATH=`which sde`
 
 original=$(md5sum txt/test-original-aes-$SEEDS.txt | cut -d ' ' -f 1)
 changed=$(md5sum txt/test-output-aes-$SEEDS.txt | cut -d ' ' -f 1)
@@ -65,14 +65,15 @@ else
     
     if [ ! `which sde` ];
         then
-            echo "found"
+            echo "not found"
             exit 1
         else
+            echo "found"
             SDE="yes"
         fi
 fi
 
-make txt/test-original-sha-$SEEDS.txt txt/test-output-sha-$SEEDS.txt SDE=$SDE
+make txt/test-original-sha-$SEEDS.txt txt/test-output-sha-$SEEDS.txt SDE=$SDE SDE_PATH=`which sde`
 
 original=$(md5sum txt/test-original-sha-$SEEDS.txt | cut -d ' ' -f 1)
 changed=$(md5sum txt/test-output-sha-$SEEDS.txt | cut -d ' ' -f 1)
