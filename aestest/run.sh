@@ -65,9 +65,10 @@ else
     
     if [ ! `which sde` ];
         then
-            echo "found"
+            echo "not found"
             exit 1
         else
+            echo "found"
             SDE="yes"
         fi
 fi
