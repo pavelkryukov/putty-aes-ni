@@ -31,8 +31,9 @@ before_install:
 install:
   - pip install --user numpy
   - wget -q ${SDE_URL}
-  - tar xvf ${SDE_ARCHIVE}.tar.bz2
-  - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
+  - tar xvf $SDE_ARCHIVE.tar.bz2
+  - export PATH=$PATH:$TRAVIS_BUILD_DIR/$SDE_ARCHIVE
+  - which sde
 
 script:
   - cd $TRAVIS_BUILD_DIR/aestest
