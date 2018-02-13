@@ -1,14 +1,14 @@
 [![Build Status](https://travis-ci.org/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.org/pavelkryukov/putty-aes-ni)[![Build status](https://ci.appveyor.com/api/projects/status/shr6l4t6dvqq5ytk?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty-aes-ni)
 
-This repository contains testing and demonstration suites for AES encryption using [AES instruction set](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set) in [PuTTY](http://www.putty.org/) SSH client.
+This repository contains testing and demonstration suites for encryption using [AES instruction set](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set) and [SHA instruction set](https://software.intel.com/en-us/articles/intel-sha-extensions) (_WIP_) in [PuTTY](http://www.putty.org/) SSH client.
 
 ### Motivation
 
-* 4.7x encryption and 13x decryption boost on Intel® Core™ i5-2520M.
-* CPU usage decreases from 50% to 30% for transmission of large files via Secure copy on Intel® Core™ i5-2520M.
+* 4.7x AES encryption and 13x AES decryption boost on Intel® Core™ i5-2520M.
+  * CPU usage decreases from 50% to 30% for transmission of large files via Secure copy on Intel® Core™ i5-2520M.
 * Attacks on AES via cache miss analysis [[Bangerter et al.](http://eprint.iacr.org/2010/594)] become impossible.
 
-You may use [Intel® Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI.
+You may use [Intel® Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI and SHA-NI.
 
 ### Impact
 
@@ -16,7 +16,7 @@ PuTTY with new AES instructions was developed as a part of [MIPT Cryptography co
 
 Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
 
-In October 2017, our changes were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git) ([2d31305](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=2d31305af9d3bf4096bb0c30e8a8336caaa70673)).
+In October 2017, AES instructions were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git) ([2d31305](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=2d31305af9d3bf4096bb0c30e8a8336caaa70673)).
 
 A bug in AES NI code generation was reported to LLVM community ([#34980](https://bugs.llvm.org/show_bug.cgi?id=34980)).
 
