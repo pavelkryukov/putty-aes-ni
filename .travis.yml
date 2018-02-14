@@ -32,7 +32,8 @@ install:
   - pip install --user numpy
   - wget -q ${SDE_URL}
   - tar xvf ${SDE_ARCHIVE}.tar.bz2
-  - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
+  - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}  
+  - export VPATH=${VPATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
   - chmod +x ${SDE_ARCHIVE}/sde
 
 script:
