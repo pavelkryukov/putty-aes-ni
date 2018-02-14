@@ -16,9 +16,10 @@ TXT_DIR=txt
 SRC_DIR=src
 HEADERS=$(SRC_DIR)/coverage.h $(SRC_DIR)/defines.h
 MAKEFILE=Makefile
+SDE_PATH?=sde
 
 ifeq ($(SDE), yes)
-	SDERUN=sde --
+	SDERUN=$(SDE_PATH) --
 else
 	SDERUN=
 endif
