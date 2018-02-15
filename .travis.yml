@@ -2,7 +2,7 @@ notifications:
   email: false
 
 language: cpp
-sudo: false
+sudo: true
 
 branches:
   only:
@@ -24,15 +24,19 @@ addons:
     - gcc-7
 
 before_install:
-  - chmod +x aestest/run.sh
+  - chmod +x test/run.sh
   - if [ -f ~/gcc-5 ] ; then export CC=gcc-5; fi
   - if [ -f ~/gcc-7 ] ; then export CC=gcc-7; fi
 
 install:
+  - sudo sysctl kernel.yama.ptrace_scope=0
   - pip install --user numpy
+  - wget -q ${SDE_URL}
+  - tar xvf ${SDE_ARCHIVE}.tar.bz2
+  - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
 
 script:
-  - cd $TRAVIS_BUILD_DIR/aestest
+  - cd $TRAVIS_BUILD_DIR/test
   - ./run.sh
   - ./run.sh -p
   - cd $TRAVIS_BUILD_DIR/Putty

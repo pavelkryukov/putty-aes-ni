@@ -21,5 +21,7 @@ void aes256_key(void *handle, unsigned char *key);
 void aes_iv(void *handle, unsigned char *iv);
 void aes_ssh2_encrypt_blk(void *handle, unsigned char *blk, int len);
 void aes_ssh2_decrypt_blk(void *handle, unsigned char *blk, int len);
+void SHA_Simple(const void *p, int len, unsigned char *output);
+void SHA256_Simple(const void *p, int len, unsigned char *output);
 
 #endif /* AESTEST_COVERAGE_H */
