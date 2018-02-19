@@ -1,5 +1,5 @@
 version: "{branch}-ci-{build}"
-image: Visual Studio 2013
+image: Visual Studio 2015
 
 branches:
   only:
@@ -18,7 +18,7 @@ environment:
     
 before_build:
 - cmd: git submodule update --init
-- cmd: call "%VS120COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
+- cmd: call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
 - cmd: set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin
 
 build_script:
