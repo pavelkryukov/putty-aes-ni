@@ -24,7 +24,7 @@ addons:
     - gcc-7
 
 before_install:
-  - chmod +x test/run.sh
+  - chmod +x ./run.sh
   - if [ -f ~/gcc-5 ] ; then export CC=gcc-5; fi
   - if [ -f ~/gcc-7 ] ; then export CC=gcc-7; fi
 
@@ -36,9 +36,8 @@ install:
   - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
 
 script:
-  - cd $TRAVIS_BUILD_DIR/test
   - ./run.sh
   - ./run.sh -p
-  - cd $TRAVIS_BUILD_DIR/Putty
+  - cd Putty
   - ./mkfiles.pl -U
   - make pscp
