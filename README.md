@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.org/pavelkryukov/putty-aes-ni)[![Build status](https://ci.appveyor.com/api/projects/status/shr6l4t6dvqq5ytk?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty-aes-ni)
 
-This repository contains testing and demonstration suites for encryption using [AES instruction set](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set) and [SHA instruction set](https://software.intel.com/en-us/articles/intel-sha-extensions) (_WIP_) in [PuTTY](http://www.putty.org/) SSH client.
+This repository contains testing and demonstration suites for encryption using [AES instruction set](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set) and [SHA instruction set](https://software.intel.com/en-us/articles/intel-sha-extensions) in [PuTTY](http://www.putty.org/) SSH client.
 
 ### Motivation
 
@@ -15,21 +15,24 @@ You may use [Intel® Product Specification Advanced Search](https://ark.intel.co
 * PuTTY with new AES instructions was developed as a part of [MIPT Cryptography course](https://github.com/vlsergey/infosec) activity.
 * Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
 * In October 2017, AES instructions were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git) ([2d31305](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=2d31305af9d3bf4096bb0c30e8a8336caaa70673)).
+* In March 2018, SHA instructions were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git) ([670c04f](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=670c04ff5b9877f00f850541648f9961067e135f)).
 * [PR clang/34980](https://bugs.llvm.org/show_bug.cgi?id=34980) was reported to LLVM community as it affects AES NI code generation.
 
 ### Contributors
 
- * [Pavel Kryukov](https://github.com/pavelkryukov)
- * [Maxim Kuznetsov](https://github.com/mkuznets)
- * [Svyatoslav Kuzmich](https://github.com/skuzmich)
+ * [Pavel Kryukov](https://github.com/pavelkryukov): AES encryption, unit tests, refactoring, CI, SHA integration
+ * [Maxim Kuznetsov](https://github.com/mkuznets): original idea, AES key expansion, integration with SDE, paper
+ * [Svyatoslav Kuzmich](https://github.com/skuzmich): AES decryption, infrastructure
 
 We are pleased to thank:
  * [Sergey Vladimirov](https://github.com/vlsergey) for mentorship of our work in MIPT.
  * PuTTY creator [Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/) for PuTTY, reviewing our code, and accepting the changes.
+ * [Jeffrey Walton](https://github.com/noloader) for clean [SHA implementation](https://github.com/noloader/SHA-Intrinsics).
  
 Detailed contributions to PuTTY code:
- * 2012 – 2015 AES contributions are available in [repository history](https://github.com/pavelkryukov/putty-aes-ni/commits/master)
- * 2015 – 2017 AES contributions are located in [git branch](https://github.com/pavelkryukov/putty/commits/aespatches)
+ * 2012 – 2015 AES patches are available in [repository history](https://github.com/pavelkryukov/putty-aes-ni/commits/svn-head)
+ * 2015 – 2017 AES patches are located in [git branch](https://github.com/pavelkryukov/putty/commits/aespatches)
+ * 2018 SHA patches are pointed by [git branch](https://github.com/pavelkryukov/putty/commits/shapatches)
 
 ### Demonstration
 
@@ -53,8 +56,8 @@ Performance data is stored to `perf-original.txt` and `perf-output.txt`, the fir
 ### Next steps
 
 The following ideas may be used by Information Security course students for their projects:
-* Add x86 SHA-NI flows to PuTTY
 * Add ARM SHA and AES flows to PuTTY
+* Use RdRand for random numbers generation
 
 ### Further Reading
 
