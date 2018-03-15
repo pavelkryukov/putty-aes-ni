@@ -77,7 +77,7 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
     aes_free_context(handle);
 }
 
-#define MAXBLK (1 << 28)
+#define MAXBLK (1 << 24)
 #define MEM (MAXBLK + 2 * 256)
 
 int main()
