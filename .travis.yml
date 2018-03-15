@@ -19,9 +19,12 @@ addons:
   apt:
     sources:
     - ubuntu-toolchain-r-test
+    - llvm-toolchain-trusty-5.0
     packages:
     - gcc-5
     - gcc-7
+    - bear
+    - clang-tidy-5.0
 
 before_install:
   - chmod +x ./run.sh
@@ -40,4 +43,5 @@ script:
   - ./run.sh -p
   - cd Putty
   - ./mkfiles.pl -U
-  - make pscp
+  - bear make
+  - if [ $CC == clang ]; then run-clang-tidy-5.0.py -header-filter='.*'; fi
