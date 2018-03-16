@@ -43,5 +43,5 @@ script:
   - ./run.sh -p
   - cd Putty
   - ./mkfiles.pl -U
-  - bear make
+  - bear make pscp plink puttygen psftp
   - if [ $CC == clang ]; then run-clang-tidy-5.0.py -header-filter='.*'; fi
