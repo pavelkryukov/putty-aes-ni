@@ -77,7 +77,7 @@ else
         exit 1
     else
         echo "found"
-        SDE="yes"
+        SDE=""
         $SDE_BIN -- ./bin/shacpuid;
     fi
 fi
