@@ -18,7 +18,7 @@ HEADERS=$(SRC_DIR)/coverage.h $(SRC_DIR)/defines.h
 MAKEFILE=Makefile
 
 ifeq ($(SDE), yes)
-	SDERUN=$(SDE_BIN) --
+	SDERUN=$(SDE_BIN) -mix --
 else
 	SDERUN=
 endif
@@ -93,8 +93,10 @@ $(TXT_DIR)/test-original-aes-%.txt: $(BIN_DIR)/sshaes-test
 	@mv test-output.txt $@
 
 $(TXT_DIR)/test-output-aes-%.txt: $(BIN_DIR)/sshaesni-test
+	@rm sde-mix-out.txt -f
 	@echo "[$(SDERUN) $^] $@"
 	@$(SDERUN) $^ $*
+	@if [ -r sde-mix-out.txt ]; then echo "Dump SDE AES stats:"; cat sde-mix-out.txt | grep "^AES" | cat; fi
 	@mv test-output.txt $@
 
 $(TXT_DIR)/test-original-sha-%.txt: $(BIN_DIR)/sshsha-test
@@ -103,8 +105,10 @@ $(TXT_DIR)/test-original-sha-%.txt: $(BIN_DIR)/sshsha-test
 	@mv test-output.txt $@
 
 $(TXT_DIR)/test-output-sha-%.txt: $(BIN_DIR)/sshshani-test
+	@rm sde-mix-out.txt -f
 	@echo "[$(SDERUN) $^] $@"
 	@$(SDERUN) $^ $*
+	@if [ -r sde-mix-out.txt ]; then echo "Dump SDE SHA stats:"; cat sde-mix-out.txt | grep "^SHA" | cat; fi
 	@mv test-output.txt $@
     
 # Performance outputs
