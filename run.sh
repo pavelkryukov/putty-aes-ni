@@ -100,4 +100,4 @@ then
     exit
 fi
 
-make txt/perf-geomean-aes.txt SDE=$SDE && echo -n "Speedup in geomean is: " && cat txt/perf-geomean-aes.txt
+make -n txt/perf-geomean-aes.txt SDE=$SDE && echo -n "Speedup in geomean is: " && cat txt/perf-geomean-aes.txt
