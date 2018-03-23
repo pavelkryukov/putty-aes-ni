@@ -1,6 +1,6 @@
 [![Build Status](https://travis-ci.org/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.org/pavelkryukov/putty-aes-ni)[![Build status](https://ci.appveyor.com/api/projects/status/shr6l4t6dvqq5ytk?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty-aes-ni)
 
-This repository contains testing and demonstration suites for encryption using [AES instruction set](http://software.intel.com/en-us/articles/intel-advanced-encryption-standard-aes-instructions-set) and [SHA instruction set](https://software.intel.com/en-us/articles/intel-sha-extensions) in [PuTTY](http://www.putty.org/) SSH client.
+This repository contains testing and demonstration suites for encryption using [AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) and [SHA instruction set](https://software.intel.com/en-us/articles/intel-sha-extensions) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
 
 ### Motivation
 
@@ -27,7 +27,7 @@ You may use [Intel® Product Specification Advanced Search](https://ark.intel.co
 We are pleased to thank:
  * [Sergey Vladimirov](https://github.com/vlsergey) for mentorship of our work in MIPT.
  * PuTTY creator [Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/) for PuTTY, reviewing our code, and accepting the changes.
- * [Jeffrey Walton](https://github.com/noloader) for clean [SHA implementation](https://github.com/noloader/SHA-Intrinsics).
+ * [Jeffrey Walton](https://github.com/noloader) for clean [SHA implementation](https://github.com/noloader/SHA-Intrinsics) and fixes to CPUID code.
  
 Detailed contributions to PuTTY code:
  * 2012 – 2015 AES patches are available in [repository history](https://github.com/pavelkryukov/putty-aes-ni/commits/svn-head)
@@ -48,8 +48,8 @@ Syntax is the same as 'cp' command. Please note that file size must be a multipl
 
 ### Performance tests
 
-To run performance test, use `./run.sh -p` in `aestest` dir. Be sure that CPU supports AES-NI (Checking for AES-NI support... found). The output is geometric mean of speedups per encryption/decryption of different data sets with memory range from 16 bytes to 256 Mbytes.
-Optimization of both AES algorithms is enabled, to turn it off, change $(OPT) to $(NOOPT) in Makefile.
+To run performance test, use `./run.sh aes -p`. Be sure that CPU supports AES-NI (Checking for AES-NI support... found). The output is geometric mean of speedups per encryption/decryption of different data sets with memory range from 16 bytes to 16 Mbytes.
+Software optimization of both AES algorithms is enabled, to turn it off, change $(OPT) to $(NOOPT) in Makefile.
 
 Performance data is stored to `perf-original.txt` and `perf-output.txt`, the first one is for standard version, second is for AES-NI version. Format of output files is following: `code keylen blocklen time`, where code 0 is encryption, code 1 is decryption, and code 2 is sdctr
 
