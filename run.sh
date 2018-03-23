@@ -10,7 +10,7 @@
 # For Putty AES NI project
 # http://putty-aes-ni.googlecode.com/
 
-if [ "$1" = "-p" ];
+if [ "$2" = "-p" ];
 then
     echo "[check] Perfomance mode enabled"
     SEEDS="5"
@@ -26,11 +26,10 @@ else
 fi
 
 mkdir obj bin txt -p
-make bin/aescpuid
-make bin/shacpuid
+make bin/${1}cpuid
 
-echo -n "[check] AES-NI support... "
-if ./bin/aescpuid -q ;
+echo -n "[check] $1-NI support... "
+if ./bin/${1}cpuid -q ;
 then
     echo "found"
     SDE=""
@@ -45,14 +44,14 @@ else
     else
         echo "found"
         SDE="yes"
-        $SDE_BIN -- ./bin/aescpuid;
+        $SDE_BIN -- ./bin/${1}cpuid;
     fi
 fi
 
-make txt/test-original-aes-$SEEDS.txt txt/test-output-aes-$SEEDS.txt SDE=$SDE SDE_BIN=$SDE_BIN
+make txt/test-original-$1-$SEEDS.txt txt/test-output-$1-$SEEDS.txt SDE=$SDE SDE_BIN=$SDE_BIN
 
-original=$(md5sum txt/test-original-aes-$SEEDS.txt | cut -d ' ' -f 1)
-changed=$(md5sum txt/test-output-aes-$SEEDS.txt | cut -d ' ' -f 1)
+original=$(md5sum txt/test-original-$1-$SEEDS.txt | cut -d ' ' -f 1)
+changed=$(md5sum txt/test-output-$1-$SEEDS.txt | cut -d ' ' -f 1)
 
 if [ "$original" = "$changed" ];
 then 
@@ -62,42 +61,9 @@ else
     exit 2
 fi
 
-echo -n "[check] SHA-NI support... "
-if ./bin/shacpuid -q ;
-then
-    echo "found"
-    SDE=""
-else
-    echo "not found"
-    echo -n "[check] SDE... "
-    
-    if [ ! `which sde` ];
-    then
-        echo "not found"
-        exit 1
-    else
-        echo "found"
-        SDE="yes"
-        $SDE_BIN -- ./bin/shacpuid;
-    fi
-fi
-
-make txt/test-original-sha-$SEEDS.txt txt/test-output-sha-$SEEDS.txt SDE=$SDE SDE_BIN=$SDE_BIN
-
-original=$(md5sum txt/test-original-sha-$SEEDS.txt | cut -d ' ' -f 1)
-changed=$(md5sum txt/test-output-sha-$SEEDS.txt | cut -d ' ' -f 1)
-
-if [ "$original" = "$changed" ];
-then 
-    echo "********** Tests passed! **************"
-else
-    echo "********** Tests not passed! **************"
-    exit 2
-fi
-
-if [ ! "$1" = "-p" ];
+if [ ! "$2" = "-p" ];
 then
     exit
 fi
 
-make txt/perf-geomean-aes.txt SDE=$SDE && echo -n "Speedup in geomean is: " && cat txt/perf-geomean-aes.txt
+make txt/perf-geomean-$1.txt SDE=$SDE && echo -n "Speedup in geomean is: " && cat txt/perf-geomean-$1.txt

@@ -39,8 +39,9 @@ install:
   - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
 
 script:
-  - ./run.sh
-  - ./run.sh -p
+  - ./run.sh aes
+  - ./run.sh sha
+  - ./run.sh aes -p
   - cd Putty
   - ./mkfiles.pl -U
   - bear make pscp plink puttygen psftp
