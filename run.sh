@@ -15,7 +15,7 @@ then
     echo "[check] Perfomance mode enabled"
     SEEDS="5"
 else
-    SEEDS="500"
+    SEEDS="100"
 fi
 
 if [ `uname -m` = x86_64 ];
