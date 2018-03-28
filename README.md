@@ -29,10 +29,14 @@ We are pleased to thank:
  * PuTTY creator [Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/) for PuTTY, reviewing our code, and accepting the changes.
  * [Jeffrey Walton](https://github.com/noloader) for clean [SHA implementation](https://github.com/noloader/SHA-Intrinsics) and fixes to CPUID code.
  
-Detailed contributions to PuTTY code:
+Detailed contributions to PuTTY AES-NI and SHA-NI code:
  * 2012 – 2015 AES patches are available in [repository history](https://github.com/pavelkryukov/putty-aes-ni/commits/svn-head)
  * 2015 – 2017 AES patches are located in [git branch](https://github.com/pavelkryukov/putty/commits/aespatches)
  * 2018 SHA patches are pointed by [git branch](https://github.com/pavelkryukov/putty/commits/shapatches)
+ * Patches applied to PuTTY main repository directly:
+   * [`a27f55e`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=a27f55e819f2c39ed45425625a0fa63e06089d76) _Use correct way to detect new instructions in Clang_
+   * [`1ec8a84`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=1ec8a84cf69a53e3c02d54280ff48d22ae571abb) _Add CPUID leaf checks prior to SHA checks_
+   * [`d6338c2`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=d6338c22c32b9f55b71ace80f993bbb8f8c1aa6d) _Fix mishandling of IV in AES-NI CBC decryption_
 
 ### Demonstration
 
