@@ -18,7 +18,7 @@
 
 static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned blocklen, unsigned blockcount, FILE *file, unsigned char* arena)
 {
-    unsigned data_size = blocklen * blockcount
+    unsigned data_size = blocklen * blockcount;
     void *handle = aes_make_context();
     const size_t keylen = (size_t)keytype;
     const size_t usedlen = 2 * keylen + data_size;
