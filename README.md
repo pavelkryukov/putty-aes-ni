@@ -65,9 +65,9 @@ SHA flow is almost the same, and can be called with `./run.sh sha` command. Like
 
 ### Next steps
 
-The following ideas may be used by Information Security course students for their projects:
-* Add ARM SHA and AES flows to PuTTY
+Following ideas for PuTTY enhancements may be used by Information Security course students for their projects:
 * Use RdRand for random numbers generation
+* Add ARM AES and SHA flows _(low priority as Windows runs on ARMv7, while the extensions are for ARMv8 only)_
 
 ### Further Reading
 
