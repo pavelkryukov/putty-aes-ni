@@ -16,7 +16,7 @@ You may use [Intel® Product Specification Advanced Search](https://ark.intel.co
 * Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
 * In October 2017, AES instructions were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git) ([2d31305](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=2d31305af9d3bf4096bb0c30e8a8336caaa70673)).
 * In March 2018, SHA instructions were merged to [the main PuTTY repository](https://git.tartarus.org/?p=simon/putty.git) ([670c04f](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=670c04ff5b9877f00f850541648f9961067e135f)).
-* [PR clang/34980](https://bugs.llvm.org/show_bug.cgi?id=34980) was reported to LLVM community as it affects AES NI code generation.
+* ~~[PR clang/34980](https://bugs.llvm.org/show_bug.cgi?id=34980)~~ was reported, fix is expected in next LLVM release.
 
 ### Contributors
 
