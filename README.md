@@ -34,6 +34,7 @@ Detailed contributions to PuTTY AES-NI and SHA-NI code:
  * 2015 – 2017 AES patches are located in [git branch](https://github.com/pavelkryukov/putty/commits/aespatches)
  * 2018 SHA patches are pointed by [git branch](https://github.com/pavelkryukov/putty/commits/shapatches)
  * Patches applied to PuTTY main repository directly:
+   * [`599bab8`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=599bab84a1019ccd6228dcc5a8bf8b9a33a96452) _Condition out AES-NI support if using a too-old clang_
    * [`a27f55e`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=a27f55e819f2c39ed45425625a0fa63e06089d76) _Use correct way to detect new instructions in Clang_
    * [`1ec8a84`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=1ec8a84cf69a53e3c02d54280ff48d22ae571abb) _Add CPUID leaf checks prior to SHA checks_
    * [`d6338c2`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=d6338c22c32b9f55b71ace80f993bbb8f8c1aa6d) _Fix mishandling of IV in AES-NI CBC decryption_
