@@ -60,6 +60,7 @@ static void test(KeyType keytype, TestType testtype, unsigned int seed, unsigned
             aes_ssh2_decrypt_blk(handle, blk_start, blocklen);
             break;
         case SDCTR:
+            aes_ssh2_sdctr(handle, blk_start, blocklen);
             break;
         }
         blk_start += blocklen;
@@ -97,6 +98,7 @@ int main(int args, char** argv)
                  for (c = 0; c < blockcounts_s; ++c) {
                     test(keytypes[k], ENCRYPT, seed, blocksizes[b], blockcounts[c], fp, arena);
                     test(keytypes[k], DECRYPT, seed, blocksizes[b], blockcounts[c], fp, arena);
+                    test(keytypes[k], SDCTR  , seed, blocksizes[b], blockcounts[c], fp, arena);
                  }
 
     free(arena);
