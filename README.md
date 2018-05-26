@@ -40,6 +40,7 @@ Detailed contributions to PuTTY AES-NI and SHA-NI code:
    * [`d6338c2`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=d6338c22c32b9f55b71ace80f993bbb8f8c1aa6d) _Fix mishandling of IV in AES-NI CBC decryption_
    * [`fbc8b7a`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=fbc8b7a8cbf49845d8fe35ffa6e66bb2638437aa) _Include <intrin.h> for hardware SHA on Windows_
    * [`7babe66`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=7babe66a839fecfe5d8b3db901b06d2fb7672cfc) _Make lots of generic data parameters into 'void *'._
+   * [`f4ca28a`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=f4ca28a0f49ff23c8a9835fe62e209aa2c7b5e61) _Add a missing const_
 
 ### Demonstration
 
