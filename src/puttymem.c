@@ -15,6 +15,8 @@
 #include <limits.h>
 #include <string.h>
 
+#include <misc.h>
+
 void *safemalloc(size_t n, size_t size)
 {
     void *p;
@@ -61,4 +63,19 @@ int smemeq(const void *av, const void *bv, size_t len)
      * will clear bit 8 iff we want to return 0, and leave it set iff
      * we want to return 1, so then we can just shift down. */
     return (0x100 - val) >> 8;
+}
+
+struct strbuf_impl {
+    int size;
+    struct strbuf visible;
+};
+
+void strbuf_free(strbuf *buf_o)
+{
+    struct strbuf_impl *buf = (struct strbuf_impl *)(((char *)(buf_o)) - offsetof(struct strbuf_impl, visible));
+    if (buf->visible.s) {
+        smemclr(buf->visible.s, buf->size);
+        sfree(buf->visible.s);
+    }
+    sfree(buf);
 }

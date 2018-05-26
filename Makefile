@@ -26,19 +26,19 @@ endif
 .SECONDARY:
 
 # BINARIES
-$(BIN_DIR)/sshsha-%: $(OBJ_DIR)/sshsha.o $(OBJ_DIR)/sshsh256.o $(OBJ_DIR)/sha%.o $(OBJ_DIR)/puttymem.o
+$(BIN_DIR)/sshsha-%: $(OBJ_DIR)/sshsha.o $(OBJ_DIR)/sshsh256.o $(OBJ_DIR)/sha%.o $(OBJ_DIR)/puttymem.o $(OBJ_DIR)/marshal.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-$(BIN_DIR)/sshshani-%: $(OBJ_DIR)/sshshani.o $(OBJ_DIR)/sshsh256ni.o $(OBJ_DIR)/sha%.o $(OBJ_DIR)/puttymem.o
+$(BIN_DIR)/sshshani-%: $(OBJ_DIR)/sshshani.o $(OBJ_DIR)/sshsh256ni.o $(OBJ_DIR)/sha%.o $(OBJ_DIR)/puttymem.o $(OBJ_DIR)/marshal.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-$(BIN_DIR)/sshaes-%: $(OBJ_DIR)/sshaes.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttymem.o
+$(BIN_DIR)/sshaes-%: $(OBJ_DIR)/sshaes.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttymem.o $(OBJ_DIR)/marshal.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-$(BIN_DIR)/sshaesni-%: $(OBJ_DIR)/sshaesni.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttymem.o
+$(BIN_DIR)/sshaesni-%: $(OBJ_DIR)/sshaesni.o $(OBJ_DIR)/aes%.o $(OBJ_DIR)/puttymem.o $(OBJ_DIR)/marshal.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
@@ -66,7 +66,11 @@ $(OBJ_DIR)/sshaes.o: $(PUTTY)/sshaes.c $(HEADERS) $(MAKEFILE)
 $(OBJ_DIR)/sshaesni.o: $(PUTTY)/sshaes.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
 	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY)
-   
+
+$(OBJ_DIR)/marshal.o: $(PUTTY)/marshal.c $(HEADERS) $(MAKEFILE)
+	@echo "[$(CC)] $@"
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY)
+
 # Decode Demonstration
 $(OBJ_DIR)/aesdemo-decode.o: $(SRC_DIR)/aesdemo.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
@@ -75,7 +79,7 @@ $(OBJ_DIR)/aesdemo-decode.o: $(SRC_DIR)/aesdemo.c $(HEADERS) $(MAKEFILE)
 # Generic rule
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c $(HEADERS) $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $< -c -o $@
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY)
 
 # CPUID
 $(BIN_DIR)/aescpuid: $(SRC_DIR)/aescpuid.c $(MAKEFILE)
