@@ -50,6 +50,18 @@ fi
 
 make txt/test-original-$1-$SEEDS.txt txt/test-output-$1-$SEEDS.txt SDE=$SDE SDE_BIN=$SDE_BIN
 
+if [ ! -f txt/test-original-$1-$SEEDS.txt ]; then
+    echo "Original output is not generated"
+    echo "********** Tests not passed! **************"
+    exit 2
+fi
+
+if [ ! -f txt/test-output-$1-$SEEDS.txt ]; then
+    echo "Optimized output is not generated"
+    echo "********** Tests not passed! **************"
+    exit 2
+fi
+
 original=$(md5sum txt/test-original-$1-$SEEDS.txt | cut -d ' ' -f 1)
 changed=$(md5sum txt/test-output-$1-$SEEDS.txt | cut -d ' ' -f 1)
 
@@ -57,6 +69,7 @@ if [ "$original" = "$changed" ];
 then 
     echo "********** Tests passed! **************"
 else
+    echo "Mismatch between software and optimized implementations"
     echo "********** Tests not passed! **************"
     exit 2
 fi
