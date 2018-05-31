@@ -25,7 +25,6 @@ build_script:
 - cmd: cd C:\projects\putty-aes-ni\Putty
 - cmd: perl ./mkfiles.pl
 - cmd: cd windows
-- cmd: copy C:\MinGW\bin\windres.exe C:\MinGW\bin\i686-w64-mingw32-windres.exe
 - cmd: if "%build%"=="msvc" nmake -f Makefile.vc
 - cmd: if "%build%"=="clang" mingw32-make -f Makefile.clangcl
 - cmd: if "%build%"=="gcc" mingw32-make -f Makefile.mgw
