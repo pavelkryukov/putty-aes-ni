@@ -11,8 +11,8 @@ environment:
     platform: x64
   - build: msvc
     platform: x86
-  - build: clang
-    platform: x86
+#  - build: clang
+#    platform: x86
  # - build: gcc
  #   platform: x86
     
