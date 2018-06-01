@@ -4,30 +4,33 @@ image: Visual Studio 2015
 branches:
   only:
   - master
-  
+
+platform:
+  - x86
+  - x64
+# - arm
+# - arm64
+
 environment:
   matrix:
   - build: msvc
-    platform: x64
-  - build: msvc
-    platform: x86
-#  - build: clang
-#    platform: x86
- # - build: gcc
- #   platform: x86
+# - build: clang
+  - build: gcc
     
 before_build:
 - git submodule update --init
-- call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %PLATFORM%
+- if "%Platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %Platform%)
 - set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
 - perl ./mkfiles.pl
 - cd windows
+- if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\htmlhelp.h .
+- if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\_mingw_unicode.h .
 - if "%build%"=="msvc" nmake -f Makefile.vc
-- if "%build%"=="clang" mingw32-make -f Makefile.clangcl
-- if "%build%"=="gcc" mingw32-make -f Makefile.mgw
+- if "%build%"=="clang" mingw32-make -f Makefile.clangcl Platform=%platform%
+- if "%build%"=="gcc" mingw32-make -f Makefile.mgw Platform=%platform%
 
 test_script:
 - cd C:\projects\putty-aes-ni\Putty\windows
