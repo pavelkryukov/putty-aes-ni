@@ -28,6 +28,8 @@ build_script:
 - cd windows
 - if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\htmlhelp.h .
 - if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\_mingw_unicode.h .
+- if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\multimon.h .
+- if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\winapifamily.h .
 - if "%build%"=="msvc" nmake -f Makefile.vc
 - if "%build%"=="clang" mingw32-make -f Makefile.clangcl Platform=%platform%
 - if "%build%"=="gcc" mingw32-make -f Makefile.mgw Platform=%platform%
