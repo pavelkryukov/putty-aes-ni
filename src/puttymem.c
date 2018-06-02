@@ -79,3 +79,11 @@ void strbuf_free(strbuf *buf_o)
     }
     sfree(buf);
 }
+
+ptrlen make_ptrlen(const void *ptr, size_t len)
+{
+    ptrlen pl;
+    pl.ptr = ptr;
+    pl.len = len;
+    return pl;
+}
