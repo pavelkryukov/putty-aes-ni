@@ -24,9 +24,9 @@ before_build:
 # For LLVM-RC binary
 - set PATH=%PATH%;C:\projects\putty-aes-ni
 # Convert to lowercase
-- if "%platform%=="X64" set platform=x64
-- if "%platform%=="ARM" set platform=arm
-- if "%platform%=="ARM64" set platform=arm64
+- if "%platform%"=="X64" set platform=x64
+- if "%platform%"=="ARM" set platform=arm
+- if "%platform%"=="ARM64" set platform=arm64
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
