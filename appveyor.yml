@@ -9,7 +9,6 @@ platform:
   - x86
   - x64
   - arm
-  - arm64
 
 environment:
   matrix:
@@ -21,13 +20,9 @@ matrix:
   exclude:
     - build: msvc
       platform: arm
-    - build: msvc
-      platform: arm64
     - build: gcc
       platform: arm
-    - build: gcc
-      platform: arm64
-    
+
 before_build:
 - git submodule update --init
 - if "%platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %platform%)
@@ -37,7 +32,6 @@ before_build:
 # Convert to lowercase
 - if "%platform%"=="X64" set platform=x64
 - if "%platform%"=="ARM" set platform=arm
-- if "%platform%"=="ARM64" set platform=arm64
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
