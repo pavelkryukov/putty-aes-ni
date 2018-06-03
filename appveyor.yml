@@ -19,7 +19,8 @@ environment:
     
 before_build:
 - git submodule update --init
-- if "%Platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %Platform%)
+- echo %platform%
+- if "%platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %platform%)
 - set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin;
 # For LLVM-RC binary
 - set PATH=%PATH%;C:\projects\putty-aes-ni
