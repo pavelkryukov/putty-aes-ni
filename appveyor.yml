@@ -9,13 +9,24 @@ platform:
   - x86
   - x64
   - arm
-# - arm64
+  - arm64
 
 environment:
   matrix:
   - build: msvc
   - build: clang
   - build: gcc
+  
+matrix:
+  exclude:
+    - build: msvc
+      platform: arm
+    - build: msvc
+      platform: arm64
+    - build: gcc
+      platform: arm
+    - build: gcc
+      platform: arm64
     
 before_build:
 - git submodule update --init
