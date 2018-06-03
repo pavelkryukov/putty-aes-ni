@@ -20,16 +20,20 @@ environment:
 before_build:
 - git submodule update --init
 - if "%Platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %Platform%)
-- set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin;C:\projects\putty-aes-ni
+- set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin;
+# For LLVM-RC binary
+- set PATH=%PATH%;C:\projects\putty-aes-ni
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
 - perl ./mkfiles.pl
 - cd windows
-- if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\htmlhelp.h .
-- if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\_mingw_unicode.h .
-- if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\multimon.h .
-- if not "%build%"=="msvc" copy C:\msys64\usr\include\w32api\winapifamily.h .
+# Copy MinGW WinAPI headers
+- if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\htmlhelp.h .
+- if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\_mingw_unicode.h .
+- if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\multimon.h .
+- if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\winapifamily.h .
+# Build
 - if "%build%"=="msvc" nmake -f Makefile.vc
 - if "%build%"=="clang" mingw32-make -f Makefile.clangcl Platform=%platform%
 - if "%build%"=="gcc" mingw32-make -f Makefile.mgw Platform=%platform%
