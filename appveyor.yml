@@ -23,16 +23,23 @@ before_build:
 - set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin;
 # For LLVM-RC binary
 - set PATH=%PATH%;C:\projects\putty-aes-ni
-- set platform=%platform%
-- if "%build%"=="gcc" set CPATH=%CPATH%;C:\msys64\usr\include\w32api
+# Convert to lowercase
+- if "%platform%="X64" set platform=x64
+- if "%platform%="ARM" set platform=arm
+- if "%platform%="ARM64" set platform=arm64
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
 - perl ./mkfiles.pl
 - cd windows
+# Copy MinGW WinAPI headers
+- if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\htmlhelp.h .	
+- if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\_mingw_unicode.h .	
+- if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\multimon.h .	
+- if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\winapifamily.h .
 # Build
 - if "%build%"=="msvc" nmake -f Makefile.vc
-- echo if "%build%"=="clang" mingw32-make -f Makefile.clangcl Platform="%Platform%"
+- if "%build%"=="clang" mingw32-make -f Makefile.clangcl Platform="%Platform%"
 - if "%build%"=="gcc" mingw32-make -f Makefile.mgw Platform="%Platform%"
 
 test_script:
