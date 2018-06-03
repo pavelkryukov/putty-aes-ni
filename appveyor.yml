@@ -14,13 +14,13 @@ platform:
 environment:
   matrix:
   - build: msvc
-# - build: clang
+  - build: clang
   - build: gcc
     
 before_build:
 - git submodule update --init
 - if "%Platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %Platform%)
-- set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin
+- set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin;C:\projects\putty-aes-ni
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
