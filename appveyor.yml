@@ -24,7 +24,7 @@ matrix:
 before_build:
 - git submodule update --init
 - if "%platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %platform%)
-- set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\MinGW\bin;
+- set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\bin;
 # For LLVM-RC binary
 - set PATH=%PATH%;C:\projects\putty-aes-ni
 # Convert to lowercase
