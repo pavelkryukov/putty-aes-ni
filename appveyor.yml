@@ -22,11 +22,9 @@ matrix:
       platform: arm
 
 before_build:
-- cd C:\
-- dir /S gcc.exe
 - git submodule update --init
 - if "%platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %platform%)
-- set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\x86_64-w64-mingw32\bin;
+- set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\bin;
 # For LLVM-RC binary
 - set PATH=%PATH%;C:\projects\putty-aes-ni
 # Convert to lowercase
@@ -44,8 +42,8 @@ build_script:
 - if "%build%"=="gcc" copy C:\msys64\usr\include\w32api\winapifamily.h .
 # Build
 - if "%build%"=="msvc" nmake -f Makefile.vc
-- if "%build%"=="clang" C:\MinGW\bin\mingw32-make -f Makefile.clangcl Platform="%Platform%"
-- if "%build%"=="gcc" C:\MinGW\bin\mingw32-make -f Makefile.mgw Platform="%Platform%"
+- if "%build%"=="clang" mingw64-make -f Makefile.clangcl Platform="%Platform%"
+- if "%build%"=="gcc" mingw64-make -f Makefile.mgw Platform="%Platform%"
 
 test_script:
 - cd C:\projects\putty-aes-ni\Putty\windows
