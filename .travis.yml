@@ -42,7 +42,3 @@ script:
   - ./run.sh aes
   - ./run.sh sha
   - ./run.sh aes -p
-  - cd Putty
-  - ./mkfiles.pl -U
-  - bear make pscp plink puttygen psftp
-  - if [ $CC == clang ]; then run-clang-tidy-5.0.py -header-filter='.*'; fi
