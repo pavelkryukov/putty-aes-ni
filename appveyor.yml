@@ -33,7 +33,7 @@ before_build:
 
 build_script:
 - cd C:\projects\putty-aes-ni\Putty
-- C:\Perl\perl mkfiles.pl
+- C:\Perl\perl.exe mkfiles.pl
 - cd windows
 # Copy MinGW WinAPI headers
 #- if "%build%"=="gcc" copy C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\x86_64-w64-mingw32\include\htmlhelp.h .	
