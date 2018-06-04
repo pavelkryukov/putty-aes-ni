@@ -22,6 +22,8 @@ matrix:
       platform: arm
 
 before_build:
+- cd C:\
+- dir /S gcc.exe
 - git submodule update --init
 - if "%platform%"=="arm" (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" x86_arm) else (call "%VS140COMNTOOLS%\..\..\VC\vcvarsall.bat" %platform%)
 - set PATH=%PATH%;C:\Perl;C:\Program Files\LLVM\bin;C:\mingw-w64\x86_64-7.3.0-posix-seh-rt_v5-rev0\mingw64\x86_64-w64-mingw32\bin;
