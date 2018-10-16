@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.com/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-aes-ni)
+AES/SHA: [![Build Status](https://travis-ci.com/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-aes-ni)
+PuTTY Build: [![Build Status](https://travis-ci.com/pavelkryukov/putty.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty)[![Build status](https://ci.appveyor.com/api/projects/status/76p649633castrmr?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty)
 
 This repository contains testing and demonstration suites for encryption using [AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) and [SHA instruction set](https://software.intel.com/en-us/articles/intel-sha-extensions) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
 
