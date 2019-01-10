@@ -38,6 +38,7 @@ Details:
    * [`7babe66`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=7babe66a839fecfe5d8b3db901b06d2fb7672cfc) _Make lots of generic data parameters into 'void *'._
    * [`f4ca28a`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=f4ca28a0f49ff23c8a9835fe62e209aa2c7b5e61) _Add a missing const_
    * [`91a624f`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=91a624fb70230a885656e74c89865270b27c9de9) _sshaes.c: add some missing clang target attributes_
+   * [`3347bd8`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=3347bd81b75e4e2e5c39de70d8771db37b380daa) _Fix AES-NI SDCTR to pass the new tests._
 
 ### _SHA NI_
  * [Jeffrey Walton](https://github.com/noloader): publc domain [SHA implementation](https://github.com/noloader/SHA-Intrinsics), fixes to CPUID code.
