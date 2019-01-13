@@ -41,6 +41,7 @@ Details:
    * [`91a624f`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=91a624fb70230a885656e74c89865270b27c9de9) _sshaes.c: add some missing clang target attributes_
    * [`3347bd8`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=3347bd81b75e4e2e5c39de70d8771db37b380daa) _Fix AES-NI SDCTR to pass the new tests._
    * [`dfdb73e`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=dfdb73e103366081045f7e5c23ed1a35e4777da4) _Complete rewrite of the AES code._
+   * [`ced0f19`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=ced0f1911830eceae26c737e93b44136828f2f13) _Ensure our aes_ni_context is 16-byte aligned._
 
 ### _SHA NI_
  * [Jeffrey Walton](https://github.com/noloader): publc domain [SHA implementation](https://github.com/noloader/SHA-Intrinsics), fixes to CPUID code.
