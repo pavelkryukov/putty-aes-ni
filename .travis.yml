@@ -39,6 +39,4 @@ install:
   - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
 
 script:
-  - ./run.sh aes
-  - ./run.sh sha
-  - ./run.sh aes -p
+  - ./run.sh

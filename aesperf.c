@@ -13,8 +13,31 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "coverage.h"
-#include "defines.h"
+#include "ssh.h"
+
+typedef enum
+{
+    AES128 = 16,
+    AES192 = 24,
+    AES256 = 32
+} KeyType;
+
+typedef enum
+{
+    ENCRYPT,
+    DECRYPT,
+    SDCTR
+} TestType;
+
+typedef enum
+{
+    SHA1,
+    SHA256
+} HashType;
+
+#define DIM(A) (sizeof(A) / sizeof(A[0]))
+
+void out_of_memory(void) { abort(); }
 
 #ifdef __clang__
 
@@ -34,48 +57,65 @@ static unsigned long long __rdtsc()
 #include <intrin.h>
 #endif
 
+#ifdef _HW_AES
+#define ALG(x) x ## _hw
+#else
+#define ALG(x) x ## _sw
+#endif
+
+extern const ssh2_cipheralg ALG(ssh_aes128_sdctr);
+extern const ssh2_cipheralg ALG(ssh_aes192_sdctr);
+extern const ssh2_cipheralg ALG(ssh_aes256_sdctr);
+extern const ssh2_cipheralg ALG(ssh_aes128_cbc);
+extern const ssh2_cipheralg ALG(ssh_aes192_cbc);
+extern const ssh2_cipheralg ALG(ssh_aes256_cbc);
+
+static const ssh2_cipheralg* get_alg(KeyType keytype, TestType testtype)
+{
+    if (testtype == SDCTR) switch (keytype) {
+    case AES128: return &ALG(ssh_aes128_sdctr);
+    case AES192: return &ALG(ssh_aes192_sdctr);
+    case AES256: return &ALG(ssh_aes256_sdctr);
+    default: return NULL;
+    }
+
+    switch (keytype) {
+    case AES128: return &ALG(ssh_aes128_cbc);
+    case AES192: return &ALG(ssh_aes192_cbc);
+    case AES256: return &ALG(ssh_aes256_cbc);
+    default: return NULL;
+    }
+}
+
 static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *file, unsigned char* ptr)
 {
-    void *handle = aes_make_context();
+    const ssh2_cipheralg* alg = get_alg(keytype, testtype);
+    ssh2_cipher* handle = ssh2_cipher_new(alg);
     const size_t keylen = (size_t)keytype;
     unsigned char* const key = ptr + blocklen;
     unsigned char* const blk = ptr;
     unsigned char* const iv = ptr + keylen + blocklen;
     volatile unsigned long long now;
 
-    switch (keytype)
-    {
-    case AES128:
-        aes128_key(handle, key);
-        break;
-    case AES192:
-        aes192_key(handle, key);
-        break;
-    case AES256:
-        aes256_key(handle, key);
-        break;
-    }
-
-    aes_iv(handle, iv);
+    ssh2_cipher_setkey(handle, key);
+    ssh2_cipher_setiv(handle, iv);
 
     now = __rdtsc();
     switch (testtype)
     {
     case ENCRYPT:
-        aes_ssh2_encrypt_blk(handle, blk, blocklen);
+    case SDCTR:
+        ssh2_cipher_encrypt(handle, blk, blocklen);
         break;
     case DECRYPT:
-        aes_ssh2_decrypt_blk(handle, blk, blocklen);
-        break;
-    case SDCTR:
-        aes_ssh2_sdctr(handle, blk, blocklen);
+        ssh2_cipher_encrypt(handle, blk, blocklen);
         break;
     }
 
     now = __rdtsc() - now;
     fprintf(file, "%d\t%d\t%d\t%llu\n", testtype, keytype * 8, blocklen, now);
 
-    aes_free_context(handle);
+    ssh2_cipher_free(handle);
 }
 
 #define MAXBLK (1 << 24)
