@@ -39,4 +39,5 @@ install:
   - export PATH=${PATH}:${TRAVIS_BUILD_DIR}/${SDE_ARCHIVE}
 
 script:
+  - make sshaes-demo-sw-encode sshaes-demo-hw-encode sshaes-demo-sw-decode sshaes-demo-hw-decode
   - ./run.sh
