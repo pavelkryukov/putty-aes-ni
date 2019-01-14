@@ -1,7 +1,7 @@
 | CI | Status |
 |:-----:|:-------:|
 |**AES performance**| [![Build Status](https://travis-ci.com/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-aes-ni) |
-|**PuTTY**| [![Build Status](https://travis-ci.com/pavelkryukov/putty.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty)[![Build status](https://ci.appveyor.com/api/projects/status/76p649633castrmr?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty)[![codecov](https://codecov.io/gh/pavelkryukov/putty/branch/master/graph/badge.svg)](https://codecov.io/gh/pavelkryukov/putty) |
+|**PuTTY**| [![Build Status](https://travis-ci.com/pavelkryukov/putty.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty)<br/>[![Build status](https://ci.appveyor.com/api/projects/status/76p649633castrmr?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty)<br/>[![codecov](https://codecov.io/gh/pavelkryukov/putty/branch/master/graph/badge.svg)](https://codecov.io/gh/pavelkryukov/putty) |
 
 This repository contains testing and demonstration suites for encryption using [AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
 
