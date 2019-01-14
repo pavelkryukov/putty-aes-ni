@@ -1,14 +1,16 @@
-**AES performance:** [![Build Status](https://travis-ci.com/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-aes-ni)
-
-**PuTTY Build:** [![Build Status](https://travis-ci.com/pavelkryukov/putty.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty)[![Build status](https://ci.appveyor.com/api/projects/status/76p649633castrmr?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty)
+| CI | Status |
+|:-----:|:-------:|
+|**AES performance**| [![Build Status](https://travis-ci.com/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-aes-ni) |
+|**PuTTY**| [![Build Status](https://travis-ci.com/pavelkryukov/putty.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty)[![Build status](https://ci.appveyor.com/api/projects/status/76p649633castrmr?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty)[![codecov](https://codecov.io/gh/pavelkryukov/putty/branch/master/graph/badge.svg)](https://codecov.io/gh/pavelkryukov/putty) |
 
 This repository contains testing and demonstration suites for encryption using [AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
 
 ## Motivation
 
-* 4.7x AES encryption and 13x AES decryption boost on Intel Core i5-2520M.
+* 4.7x AES encryption and 13x AES decryption boost on Intel Core i5-2520M over lookup table implementation
   * CPU usage decreases from 50% to 30% for transmission of large files via Secure copy on Intel Core i5-2520M.
-* Attacks on AES via cache miss analysis [[Bangerter et al.](http://eprint.iacr.org/2010/594)] become impossible.
+  * Lookup-table specific attacks on AES via cache miss analysis [[Bangerter et al.](http://eprint.iacr.org/2010/594)] become impossible.
+* 40x encryption/decryption boost over straightforward implementation.
 
 ## Impact
 
@@ -27,7 +29,7 @@ This repository contains testing and demonstration suites for encryption using [
  * [Maxim Kuznetsov](https://github.com/mkuznets): original idea, AES key expansion, integration with SDE, paper
  * [Pavel Kryukov](https://github.com/pavelkryukov): AES encryption, unit tests, refactoring
  * [Svyatoslav Kuzmich](https://github.com/skuzmich): AES decryption, infrastructure
- 
+
 Details:
  * Original 2012–2015 patches are available in [repository history](https://github.com/pavelkryukov/putty-aes-ni/commits/svn-head)
  * Original 2015–2017 patches are located in [git branch](https://github.com/pavelkryukov/putty/commits/aespatches)
@@ -65,12 +67,12 @@ Details:
 
 ### _AES encryption and decryption_
 
-To verify boost of AES-NI algorithm, one may create standalone AES encryptor and decryptor tools. After cloning repository and PuTTY, binaries are buildable with GNU Makefile:
+To verify boost of AES-NI algorithm, one may create standalone AES-256 encryptor and decryptor tools. After cloning repository and PuTTY, binaries are buildable with GNU Makefile:
 
 | Type | SW AES | AES NI |
 |:-|:-------|:-------|
-| Encrypt | sshaes-demo-sw-encode | sshaesni-demo-hw-encode |
-| Decrypt | sshaes-demo-sw-decode | sshaesni-demo-hw-decode |
+| Encrypt | sshaes-demo-sw-encode | sshaes-demo-hw-encode |
+| Decrypt | sshaes-demo-sw-decode | sshaes-demo-hw-decode |
 
 Syntax is the same as 'cp' command. Please note that file size must be a multiple of 16 bytes.
 `<sshdemo> src dst`
