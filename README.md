@@ -3,7 +3,7 @@
 |**AES demo**| [![Build Status](https://travis-ci.com/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-aes-ni) |
 |**PuTTY**| [![Build Status](https://travis-ci.com/pavelkryukov/putty.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty)<br/>[![Build status](https://ci.appveyor.com/api/projects/status/76p649633castrmr?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty)<br/>[![codecov](https://codecov.io/gh/pavelkryukov/putty/branch/master/graph/badge.svg)](https://codecov.io/gh/pavelkryukov/putty) |
 
-This repository contains testing and demonstration suites for encryption using [AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
+This repository contains testing and demonstration suites for encryption using [Intel AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
 
 ## Motivation
 
@@ -89,7 +89,7 @@ Performance data is stored to **perf-original.txt** and **perf-output.txt**, the
 ## Next steps
 
 Following ideas for PuTTY enhancements may be used by Information Security course students for their projects:
-* Add ARM AES and SHA flows _(low priority as Windows runs on ARMv7, while the extensions are for ARMv8 only)_
+* Add ARM SHA flow _(low priority as Windows runs on ARMv7, while the extension is for ARMv8 only)_
 * Use RdRand for random numbers generation
 
 ## Thanks
