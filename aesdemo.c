@@ -19,26 +19,26 @@
 #define BUF_LEN (1 << 28)
 
 #ifdef NEW_INSTRUCTIONS
-extern const ssh2_cipheralg ssh_aes256_cbc_hw;
-static const ssh2_cipheralg* alg = &ssh_aes256_cbc_hw;
+extern const ssh_cipheralg ssh_aes256_cbc_hw;
+static const ssh_cipheralg* alg = &ssh_aes256_cbc_hw;
 #else
-extern const ssh2_cipheralg ssh_aes256_cbc_sw;
-static const ssh2_cipheralg* alg = &ssh_aes256_cbc_sw;
+extern const ssh_cipheralg ssh_aes256_cbc_sw;
+static const ssh_cipheralg* alg = &ssh_aes256_cbc_sw;
 #endif
 
 void out_of_memory(void) { abort(); }
 
 void cipher(unsigned char* block)
 {
-    ssh2_cipher *handle = ssh2_cipher_new(alg);
-    ssh2_cipher_setkey(handle, "imtheoperatorwithmypocketcalcula");
-    ssh2_cipher_setiv(handle, "initializationve");
+    ssh_cipher *handle = ssh_cipher_new(alg);
+    ssh_cipher_setkey(handle, "imtheoperatorwithmypocketcalcula");
+    ssh_cipher_setiv(handle, "initializationve");
 #ifdef DECODE
-    ssh2_cipher_decrypt(handle, block, BUF_LEN);
+    ssh_cipher_decrypt(handle, block, BUF_LEN);
 #else
-    ssh2_cipher_encrypt(handle, block, BUF_LEN);
+    ssh_cipher_encrypt(handle, block, BUF_LEN);
 #endif
-    ssh2_cipher_free(handle);
+    ssh_cipher_free(handle);
 }
 
 int ciphCopy(char* src, char* dst)

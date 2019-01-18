@@ -63,14 +63,14 @@ static unsigned long long __rdtsc()
 #define ALG(x) x ## _sw
 #endif
 
-extern const ssh2_cipheralg ALG(ssh_aes128_sdctr);
-extern const ssh2_cipheralg ALG(ssh_aes192_sdctr);
-extern const ssh2_cipheralg ALG(ssh_aes256_sdctr);
-extern const ssh2_cipheralg ALG(ssh_aes128_cbc);
-extern const ssh2_cipheralg ALG(ssh_aes192_cbc);
-extern const ssh2_cipheralg ALG(ssh_aes256_cbc);
+extern const ssh_cipheralg ALG(ssh_aes128_sdctr);
+extern const ssh_cipheralg ALG(ssh_aes192_sdctr);
+extern const ssh_cipheralg ALG(ssh_aes256_sdctr);
+extern const ssh_cipheralg ALG(ssh_aes128_cbc);
+extern const ssh_cipheralg ALG(ssh_aes192_cbc);
+extern const ssh_cipheralg ALG(ssh_aes256_cbc);
 
-static const ssh2_cipheralg* get_alg(KeyType keytype, TestType testtype)
+static const ssh_cipheralg* get_alg(KeyType keytype, TestType testtype)
 {
     if (testtype == SDCTR) switch (keytype) {
     case AES128: return &ALG(ssh_aes128_sdctr);
@@ -89,33 +89,33 @@ static const ssh2_cipheralg* get_alg(KeyType keytype, TestType testtype)
 
 static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *file, unsigned char* ptr)
 {
-    const ssh2_cipheralg* alg = get_alg(keytype, testtype);
-    ssh2_cipher* handle = ssh2_cipher_new(alg);
+    const ssh_cipheralg* alg = get_alg(keytype, testtype);
+    ssh_cipher* handle = ssh_cipher_new(alg);
     const size_t keylen = (size_t)keytype;
     unsigned char* const key = ptr + blocklen;
     unsigned char* const blk = ptr;
     unsigned char* const iv = ptr + keylen + blocklen;
     volatile unsigned long long now;
 
-    ssh2_cipher_setkey(handle, key);
-    ssh2_cipher_setiv(handle, iv);
+    ssh_cipher_setkey(handle, key);
+    ssh_cipher_setiv(handle, iv);
 
     now = __rdtsc();
     switch (testtype)
     {
     case ENCRYPT:
     case SDCTR:
-        ssh2_cipher_encrypt(handle, blk, blocklen);
+        ssh_cipher_encrypt(handle, blk, blocklen);
         break;
     case DECRYPT:
-        ssh2_cipher_encrypt(handle, blk, blocklen);
+        ssh_cipher_encrypt(handle, blk, blocklen);
         break;
     }
 
     now = __rdtsc() - now;
     fprintf(file, "%d\t%d\t%d\t%llu\n", testtype, keytype * 8, blocklen, now);
 
-    ssh2_cipher_free(handle);
+    ssh_cipher_free(handle);
 }
 
 #define MAXBLK (1 << 24)
