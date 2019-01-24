@@ -10,9 +10,7 @@
  * http://putty-aes-ni.googlecode.com/
  */
 
-#ifndef SILENT
 #include <stdio.h>
-#endif
 
 #if defined(__clang__) || defined(__GNUC__)
 
@@ -38,8 +36,6 @@ static int CheckCPUsupportAES()
 int main(int argc, char ** argv)
 {
     const int res = !CheckCPUsupportAES();
-#ifndef SILENT
     printf("This CPU %s AES-NI\n", res ? "does not support" : "supports");
-#endif
     return res;
 }
