@@ -61,6 +61,11 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
   * CI repository is a [PuTTY fork](https://github.com/pavelkryukov/putty-ci)
   * Previous history is available in PuTTY-AES-NI repository: [Travis](https://github.com/pavelkryukov/putty-aes-ni/commits/master/.travis.yml), [Appveyor](https://github.com/pavelkryukov/putty-aes-ni/commits/master/appveyor.yml)
  
+### _CPUs with AES NI support_
+
+Get sure that your CPU supports AES-NI by running `make aescpuid && ./aescpuid`.
+You may use [Intel Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI and SHA-NI.
+ 
 ### _AES encryption and decryption_
 
 To observe boost of AES-NI algorithm, one may create standalone AES-256 encryptor and decryptor tools using PuTTY source code. After cloning repository and PuTTY submodule, binaries are buildable with GNU Makefile:
@@ -78,9 +83,6 @@ Syntax is the same as 'cp' command. Please note that file size must be a multipl
 To run performance test, use `make perf-geomean-aes.txt`. The output is geometric mean of speedups per encryption/decryption of different data sets with memory range from 16 bytes to 16 Mbytes.
 
 Raw performance data is stored to **perf-original.txt** and **perf-output.txt**, the first one is for standard version, second is for AES-NI version. Format of output files is following: `code keylen blocklen time`, where code 0 is encryption, code 1 is decryption, and code 2 is for encryption in sdctr mode.
-
-Be sure that CPU supports AES-NI (_Checking for AES-NI support... found_). 
-You may use [Intel Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI and SHA-NI.
 
 ### _AES and SHA functional tests_
 
