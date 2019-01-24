@@ -12,12 +12,6 @@ LDFLAGS=
 PUTTY=./Putty
 MAKEFILE=Makefile
 
-ifeq ($(SDE), yes)
-	SDERUN=$(SDE_BIN) -mix --
-else
-	SDERUN=
-endif
-
 .SECONDARY:
 
 # BINARIES
@@ -74,8 +68,8 @@ perf-original-aes.txt: sshaes-perf
 	@mv perf-output.txt $@
 
 perf-output-aes.txt: sshaesni-perf
-	@echo "[$(SDERUN) run] $@"
-	@$(SDERUN) ./$^
+	@echo "[run] $@"
+	@./$^
 	@mv perf-output.txt $@
 
 %.sorted.txt: %.txt

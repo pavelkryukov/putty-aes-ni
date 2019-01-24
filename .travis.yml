@@ -2,37 +2,17 @@ notifications:
   email: false
 
 language: c
-
-branches:
-  only:
-  - master
-  - travis
   
 compiler:
   - gcc
-  - touch ~/gcc-5; gcc-5
-  - touch ~/gcc-7; gcc-7
   - clang
-
-addons:
-  apt:
-    sources:
-    - ubuntu-toolchain-r-test
-    - llvm-toolchain-trusty-5.0
-    packages:
-    - gcc-5
-    - gcc-7
-    - bear
-    - clang-tidy-5.0
-
-before_install:
-  - chmod +x ./run.sh
-  - if [ -f ~/gcc-5 ] ; then export CC=gcc-5; fi
-  - if [ -f ~/gcc-7 ] ; then export CC=gcc-7; fi
 
 install:
   - pip install --user numpy
 
 script:
+  - make aescpuid
+  - ./aescpuid
   - make sshaes-demo-sw-encode sshaes-demo-hw-encode sshaes-demo-sw-decode sshaes-demo-hw-decode
-  - ./run.sh
+  - make perf-geomean-aes.txt
+  - echo "Speedup in geomean is:" && cat perf-geomean-aes.txt

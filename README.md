@@ -1,7 +1,7 @@
 **AES demo**: [![Build Status](https://travis-ci.com/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-aes-ni)
 **PuTTY**: [![Build Status](https://travis-ci.com/pavelkryukov/putty-ci.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-ci)[![Build status](https://ci.appveyor.com/api/projects/status/ff23l7wwucr4lle7?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty-ci)[![codecov](https://codecov.io/gh/pavelkryukov/putty-ci/branch/master/graph/badge.svg)](https://codecov.io/gh/pavelkryukov/putty-ci)
 
-This repository contains demonstration suites for encryption using [Intel AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
+Demonstration suites for encryption using [Intel AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
 
 ### _Motivation_
 
@@ -73,14 +73,14 @@ To observe boost of AES-NI algorithm, one may create standalone AES-256 encrypto
 Syntax is the same as 'cp' command. Please note that file size must be a multiple of 16 bytes.
 `<sshdemo> src dst`
 
-You may use [Intel Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI and SHA-NI.
-
 ### _AES performance tests_
 
-To run performance test, use `./run.sh`. Be sure that CPU supports AES-NI (_Checking for AES-NI support... found_). The output is geometric mean of speedups per encryption/decryption of different data sets with memory range from 16 bytes to 16 Mbytes.
-Software optimization of both AES algorithms is enabled, to turn it off, change(OPT) to(NOOPT) in Makefile.
+To run performance test, use `make perf-geomean-aes.txt`. The output is geometric mean of speedups per encryption/decryption of different data sets with memory range from 16 bytes to 16 Mbytes.
 
-Performance data is stored to **perf-original.txt** and **perf-output.txt**, the first one is for standard version, second is for AES-NI version. Format of output files is following: `code keylen blocklen time`, where code 0 is encryption, code 1 is decryption, and code 2 is for encryption in sdctr mode.
+Raw performance data is stored to **perf-original.txt** and **perf-output.txt**, the first one is for standard version, second is for AES-NI version. Format of output files is following: `code keylen blocklen time`, where code 0 is encryption, code 1 is decryption, and code 2 is for encryption in sdctr mode.
+
+Be sure that CPU supports AES-NI (_Checking for AES-NI support... found_). 
+You may use [Intel Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI and SHA-NI.
 
 ### _AES and SHA functional tests_
 
