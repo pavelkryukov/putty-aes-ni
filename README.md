@@ -12,11 +12,11 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
 
 ### _Impact_
 
-* PuTTY 0.71 will contain new implementation of AES and SHA with new x86 instructions.
+* Hardware-accelerated versions of AES, SHA-256, SHA-1 are intergrated to [PuTTY 0.71](https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html)
 * Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
 * PuTTY with new AES instructions was developed as a part of [MIPT Cryptography course](https://github.com/vlsergey/infosec) activities.
 * Established basic continious integration infrastructure (CI) for [cross-platform PuTTY builds](https://github.com/pavelkryukov/putty).
-* Simon Tatham continued the work by implementing [AES](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=53747ad3ab6194ebd54958a4ca0abcf73a457466) and [SHA](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=dc2fdb8acf19b5a51d4d9bb7d84ad7190b73205c) with new ARM instructions in Putty 0.71.
+* Simon Tatham implemented [AES](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=53747ad3ab6194ebd54958a4ca0abcf73a457466) and [SHA](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=dc2fdb8acf19b5a51d4d9bb7d84ad7190b73205c) with new ARM instructions in Putty 0.71.
 * LLVM bugs reported:
   * [34980](https://bugs.llvm.org/show_bug.cgi?id=34980): Bug with target attribute propagation. Fixed in Clang 6.0.1.
   * [38386](https://bugs.llvm.org/show_bug.cgi?id=38386): PuTTY CI needs LLVM resource compiler on Windows. Shipped in LLVM 7.0.0 package.
