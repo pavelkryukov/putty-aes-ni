@@ -7,6 +7,10 @@ compiler:
   - gcc
   - clang
 
+arch:
+  - amd64
+  - arm64
+
 install:
   - pip install --user numpy
 
