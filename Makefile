@@ -15,21 +15,21 @@ MAKEFILE=Makefile
 .SECONDARY:
 
 # BINARIES
-sshaes-perf: sshaes.o aesperf.o memory.o utils.o marshal.o
+sshaes-perf: sshaes.o aesperf.o memory.o utils.o marshal.o aescpuid_impl.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-sshaesni-perf: sshaes.o aesperfni.o memory.o utils.o marshal.o
+sshaesni-perf: sshaes.o aesperfni.o memory.o utils.o marshal.o aescpuid_impl.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
     
-sshaes-demo-%: sshaes.o aesdemo-%.o memory.o utils.o marshal.o
+sshaes-demo-%: sshaes.o aesdemo-%.o memory.o utils.o marshal.o aescpuid_impl.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-aescpuid: aescpuid.c $(MAKEFILE)
+aescpuid: aescpuid.c aescpuid_impl.o
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $< -o $@ -DSILENT
+	@$(CC) $(CFLAGS) $^ -o $@ -DSILENT
 
 # Objects
 aesperf.o: aesperf.c $(MAKEFILE)
