@@ -72,33 +72,57 @@ static const ssh_cipheralg* get_alg(KeyType keytype, TestType testtype)
 
 static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *file, unsigned char* ptr)
 {
+    printf("here: %d\n", __LINE__);
     const ssh_cipheralg* alg = get_alg(keytype, testtype);
+    printf("here: %d\n", __LINE__);
     ssh_cipher* handle = ssh_cipher_new(alg);
+    printf("here: %d\n", __LINE__);
     const size_t keylen = (size_t)keytype;
+    printf("here: %d\n", __LINE__);
     unsigned char* const key = ptr + blocklen;
     unsigned char* const blk = ptr;
     unsigned char* const iv = ptr + keylen + blocklen;
     volatile unsigned long long now;
 
+    printf("here: %d\n", __LINE__);
     ssh_cipher_setkey(handle, key);
+    
+    printf("here: %d\n", __LINE__);
     ssh_cipher_setiv(handle, iv);
 
+    printf("here: %d\n", __LINE__);
     now = clock();
+    
+    printf("here: %d\n", __LINE__);
     switch (testtype)
     {
     case ENCRYPT:
     case SDCTR:
+    
+    printf("here: %d\n", __LINE__);
         ssh_cipher_encrypt(handle, blk, blocklen);
+        
+    printf("here: %d\n", __LINE__);
         break;
     case DECRYPT:
+    
+    printf("here: %d\n", __LINE__);
         ssh_cipher_encrypt(handle, blk, blocklen);
+        
+    printf("here: %d\n", __LINE__);
         break;
     }
 
+    printf("here: %d\n", __LINE__);
     now = clock() - now;
+    
+    printf("here: %d\n", __LINE__);
     fprintf(file, "%d\t%d\t%d\t%llu\n", testtype, keytype * 8, blocklen, now);
 
+    printf("here: %d\n", __LINE__);
     ssh_cipher_free(handle);
+    
+    printf("here: %d\n", __LINE__);
 }
 
 #define MAXBLK (1 << 24)
@@ -115,11 +139,11 @@ int main()
     for (i = 0; i < MEM; ++i)
         ptr[i] = rand();
 
-    for (b = 16; b <= MAXBLK; b <<= 1)
+    for (b = 16; b <= 16; b <<= 1)
     {
         printf("\n Block size %15i : ",b);
         fflush(stdout);
-        for (i = 0; i < 30; ++i)
+        for (i = 0; i < 1; ++i)
         {
             for (k = 0; k < keytypes_s; ++k) {
                 test(keytypes[k], ENCRYPT, b, fp, ptr);
