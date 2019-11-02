@@ -70,6 +70,11 @@ static const ssh_cipheralg* get_alg(KeyType keytype, TestType testtype)
     }
 }
 
+static unsigned align_64(unsigned x)
+{
+    return x < 64 ? 64 : x;
+}
+
 static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *file, unsigned char* ptr)
 {
     printf("here: %d\n", __LINE__);fflush(stdout);
@@ -79,9 +84,9 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
     printf("here: %d\n", __LINE__);fflush(stdout);
     const size_t keylen = (size_t)keytype;
     printf("here: %d\n", __LINE__);fflush(stdout);
-    unsigned char* const key = ptr + MIN(blocklen, 64);
+    unsigned char* const key = ptr + align_64(blocklen);
     unsigned char* const blk = ptr;
-    unsigned char* const iv = key + MIN(keylen, 64);
+    unsigned char* const iv = key + align_64(keylen);
     volatile unsigned long long now;
 
     printf("here: %d\n", __LINE__);fflush(stdout);
@@ -140,7 +145,7 @@ int main()
         ptr[i] = rand();
 
     unsigned char* aligned_ptr = ptr;
-    while ((size_t)aligned_ptr % 64) != 0)
+    while ((size_t)aligned_ptr % 64 != 0)
         ++aligned_ptr;
 
     for (b = 16; b <= 16; b <<= 1)
