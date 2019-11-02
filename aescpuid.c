@@ -12,6 +12,35 @@
 
 #include <stdio.h>
 
+#if (defined __arm__ || defined __aarch64__) /* ARM */
+
+#ifdef __linux__
+
+#include <sys/auxv.h>
+#include <asm/hwcap.h>
+
+static int CheckCPUsupportAES()
+{
+#if defined HWCAP_AES
+    return getauxval(AT_HWCAP) & HWCAP_AES;
+#elif defined HWCAP2_AES
+    return getauxval(AT_HWCAP2) & HWCAP2_AES;
+#else
+    return false;
+#endif
+}
+
+#else /* Windows */
+
+static int CheckCPUsupportAES()
+{
+    return IsProcessorFeaturePresent(PF_ARM_V8_CRYPTO_INSTRUCTIONS_AVAILABLE);
+}
+
+#endif /* Windows or Linux */
+
+#else /* x86 */
+
 #if defined(__clang__) || defined(__GNUC__)
 
 #include <cpuid.h>
@@ -32,6 +61,8 @@ static int CheckCPUsupportAES()
 }
 
 #endif /* defined(__clang__) || defined(__GNUC__) */
+
+#endif /* ARM / x86 */
 
 int main(int argc, char ** argv)
 {
