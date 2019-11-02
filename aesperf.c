@@ -79,9 +79,9 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
     printf("here: %d\n", __LINE__);fflush(stdout);
     const size_t keylen = (size_t)keytype;
     printf("here: %d\n", __LINE__);fflush(stdout);
-    unsigned char* const key = ptr + blocklen;
+    unsigned char* const key = ptr + MIN(blocklen, 64);
     unsigned char* const blk = ptr;
-    unsigned char* const iv = ptr + keylen + blocklen;
+    unsigned char* const iv = key + MIN(keylen, 64);
     volatile unsigned long long now;
 
     printf("here: %d\n", __LINE__);fflush(stdout);
@@ -126,7 +126,7 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
 }
 
 #define MAXBLK (1 << 24)
-#define MEM (MAXBLK + 2 * 256)
+#define MEM (MAXBLK + 6 * 256)
 
 int main()
 {
@@ -139,6 +139,10 @@ int main()
     for (i = 0; i < MEM; ++i)
         ptr[i] = rand();
 
+    unsigned char* aligned_ptr = ptr;
+    while ((size_t)aligned_ptr % 64) != 0)
+        ++aligned_ptr;
+
     for (b = 16; b <= 16; b <<= 1)
     {
         printf("\n Block size %15i : ",b);
@@ -146,9 +150,9 @@ int main()
         for (i = 0; i < 1; ++i)
         {
             for (k = 0; k < keytypes_s; ++k) {
-                test(keytypes[k], ENCRYPT, b, fp, ptr);
-                test(keytypes[k], DECRYPT, b, fp, ptr);
-                test(keytypes[k], SDCTR  , b, fp, ptr);
+                test(keytypes[k], ENCRYPT, b, fp, aligned_ptr);
+                test(keytypes[k], DECRYPT, b, fp, aligned_ptr);
+                test(keytypes[k], SDCTR  , b, fp, aligned_ptr);
                 fflush(fp);
             }
             printf("-");
