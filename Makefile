@@ -7,7 +7,7 @@
 # http://putty-aes-ni.googlecode.com/
 
 CC?=gcc
-CFLAGS=-O2 -Wall -Werror -std=c99 -Wno-long-long # -pedantic
+CFLAGS=-O0 -g -Wall -Werror -std=c99 -Wno-long-long # -pedantic
 LDFLAGS=
 PUTTY=./Putty
 MAKEFILE=Makefile
@@ -69,7 +69,7 @@ perf-original-aes.txt: sshaes-perf
 
 perf-output-aes.txt: sshaesni-perf
 	@echo "[run] $@"
-	@./$^
+	gdb  -x ./test.gdb --args  ./$^
 	@mv perf-output.txt $@
 
 %.sorted.txt: %.txt
