@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "ssh.h"
 
@@ -38,24 +39,6 @@ typedef enum
 #define DIM(A) (sizeof(A) / sizeof(A[0]))
 
 void out_of_memory(void) { abort(); }
-
-#ifdef __clang__
-
-#elif defined(__GNUC__)
-static unsigned long long __rdtsc()
-{
-    unsigned hi, lo;
-    __asm__ __volatile__
-    (
-        "rdtsc"
-        : "=a"(lo)
-        , "=d"(hi)
-    );
-    return ((unsigned long long)lo) | (((unsigned long long)hi)<<32);
-}
-#else
-#include <intrin.h>
-#endif
 
 #ifdef _HW_AES
 #define ALG(x) x ## _hw
@@ -100,7 +83,7 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
     ssh_cipher_setkey(handle, key);
     ssh_cipher_setiv(handle, iv);
 
-    now = __rdtsc();
+    now = clock();
     switch (testtype)
     {
     case ENCRYPT:
@@ -112,7 +95,7 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
         break;
     }
 
-    now = __rdtsc() - now;
+    now = clock() - now;
     fprintf(file, "%d\t%d\t%d\t%llu\n", testtype, keytype * 8, blocklen, now);
 
     ssh_cipher_free(handle);
