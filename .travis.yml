@@ -11,8 +11,8 @@ arch:
   - amd64
   - arm64
 
-install:
-  - pip install --user numpy
+#install:
+#  - pip install --user numpy
 
 script:
   - make aescpuid
