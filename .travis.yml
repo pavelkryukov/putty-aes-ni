@@ -12,7 +12,7 @@ arch:
   - arm64
 
 install:
-  - pip install --user numpy
+  - pip3 install --user numpy
 
 script:
   - make aescpuid

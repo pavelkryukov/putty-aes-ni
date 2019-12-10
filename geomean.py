@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # Get geomean of two performance outputs
 #
 # @author Pavel Kryukov <kryukov@frtk.ru>
@@ -25,4 +25,4 @@ for row in range(len(array1)):
             raise "Array content mismatch"
     ratios.append(float(array1[row][3]) / float(array2[row][3]))
     
-print str(geomean(ratios)) + " times"
+print (str(geomean(ratios)) + " times")
