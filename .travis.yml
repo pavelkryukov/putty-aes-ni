@@ -2,6 +2,7 @@ notifications:
   email: false
 
 language: c
+dist: bionic
   
 compiler:
   - gcc
@@ -11,8 +12,10 @@ arch:
   - amd64
   - arm64
 
-install:
-  - pip3 install --user numpy
+addons:
+  apt:
+    packages:
+      - python3
 
 script:
   - make aescpuid

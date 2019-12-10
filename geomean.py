@@ -6,14 +6,16 @@
 # For Putty AES NI project
 # http://github.io/pavelkryukov/putty-aes-ni
 import sys
-import numpy as np
+import math
+
+def average(iterable):
+    return sum(iterable) / len(iterable)
 
 def geomean(iterable):
-    a = np.log(iterable)
-    return np.exp(a.sum()/len(a))
+    return math.exp(average([math.log(i) for i in iterable]))
 
-array1 = np.loadtxt(sys.argv[1], skiprows=1)
-array2 = np.loadtxt(sys.argv[2], skiprows=1)
+array1 = [x.split() for x in open(sys.argv[1])]
+array2 = [x.split() for x in open(sys.argv[2])]
 
 if len(array1) != len(array2):
     raise "Array size mismatch!"

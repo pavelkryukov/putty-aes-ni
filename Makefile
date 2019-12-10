@@ -76,9 +76,9 @@ perf-output-aes.txt: sshaesni-perf
 	@echo "[sort] $@"
 	@sort $^ > $@
     
-perf-geomean-%.txt: perf-original-%.sorted.txt perf-output-%.sorted.txt
+perf-geomean-%.txt: geomean.py perf-original-%.sorted.txt perf-output-%.sorted.txt
 	@echo "[geomean] $@"
-	@python ./geomean.py $^ > $@
+	@python3 ./$< $(filter-out $<,$^) > $@
 
 clean:
 	rm *.o *.txt sshaes-demo-* sshaes-perf sshaesni-perf aescpuid
