@@ -15,24 +15,28 @@ MAKEFILE=Makefile
 .SECONDARY:
 
 # BINARIES
-sshaes-perf: sshaes.o aesperf.o memory.o utils.o marshal.o
+sshaes-perf: sshaes.o aesperf.o memory.o utils.o marshal.o aescpuid.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
-sshaesni-perf: sshaes.o aesperfni.o memory.o utils.o marshal.o
+sshaesni-perf: sshaes.o aesperfni.o memory.o utils.o marshal.o aescpuid.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
     
-sshaes-demo-%: sshaes.o aesdemo-%.o memory.o utils.o marshal.o
+sshaes-demo-%: sshaes.o aesdemo-%.o memory.o utils.o marshal.o aescpuid.o
 	@echo "[$(LD)] $@"
 	@$(CC) $(LDFLAGS) $^ -o $@
 
 aescpuid: aescpuid.c $(MAKEFILE)
 	@echo "[$(CC)] $@"
-	@$(CC) $(CFLAGS) $< -o $@ -DSILENT
+	@$(CC) $(CFLAGS) $< -o $@ -DCPUID_HAS_MAIN
 
 # Objects
 aesperf.o: aesperf.c $(MAKEFILE)
+	@echo "[$(CC)] $@"
+	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY)
+
+aescpuid.o: aescpuid.c $(MAKEFILE)
 	@echo "[$(CC)] $@"
 	@$(CC) $(CFLAGS) $< -c -o $@ -I $(PUTTY)
 
