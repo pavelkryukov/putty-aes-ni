@@ -3,19 +3,11 @@ notifications:
 
 language: c
 dist: bionic
-  
-compiler:
-  - gcc
-  - clang
+compiler: clang
 
 arch:
   - amd64
   - arm64
-
-addons:
-  apt:
-    packages:
-      - python3
 
 script:
   - make aescpuid
