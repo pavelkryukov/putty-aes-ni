@@ -95,7 +95,7 @@ static void test(KeyType keytype, TestType testtype, unsigned blocklen, FILE *fi
         break;
     }
 
-    now = clock() - now;
+    now = clock() - now + 1; // add a cycle to avoid zero
     fprintf(file, "%d\t%d\t%d\t%llu\n", testtype, keytype * 8, blocklen, now);
 
     ssh_cipher_free(handle);
