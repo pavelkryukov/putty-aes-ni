@@ -20,7 +20,7 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
 * LLVM bugs reported:
   * ~~[34980](https://bugs.llvm.org/show_bug.cgi?id=34980)~~: Bug with target attribute propagation. Fixed in Clang 6.0.1.
   * ~~[38386](https://bugs.llvm.org/show_bug.cgi?id=38386)~~: PuTTY CI needs LLVM resource compiler on Windows. Shipped in LLVM 7.0.0 package.
-  * ~~[40300](https://bugs.llvm.org/show_bug.cgi?id=40300)~~: lld-link does not detect duplicate symbols if optimizations are enabled. Fixed in LLVM 9.0.0.
+  * ~~[40300](https://bugs.llvm.org/show_bug.cgi?id=40300)~~: lld-link does not detect duplicate symbols with /O3. Fixed in LLVM 9.0.0.
 
 ### _AES NI_
  * [Maxim Kuznetsov](https://github.com/mkuznets): original idea, AES key expansion, integration with SDE, paper
