@@ -3,7 +3,7 @@
 
 Demonstration suites for encryption using [Intel AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) and [ARM Cryptography Extension](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0514g/way1395175472464.html) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
 
-### _Motivation_
+## _Motivation_
 
 * 40x encryption/decryption boost over straightforward C implementation.
 * 4.7x AES encryption and 13x AES decryption boost on Intel Core i5-2520M over lookup table implementation
@@ -11,7 +11,7 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
   * Lookup-table specific attacks on AES via cache miss analysis [[Bangerter et al.](http://eprint.iacr.org/2010/594)] become impossible.
 * 9x AES boost on Ampere eMAG CPU
 
-### _Impact_
+## _Impact_
 
 * Hardware-accelerated versions of AES, SHA-256, SHA-1 are intergrated to [PuTTY 0.71](https://www.chiark.greenend.org.uk/~sgtatham/putty/changes.html)
 * Performance results were presented by [Maxim Kuznetsov](https://github.com/mkuznets) in „Radio Engineering and Cryptography“ section of [55th MIPT Conference](http://conf55.mipt.ru/info/main/). The report got „The Best Report of the Section“ achievement.
@@ -22,6 +22,7 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
   * ~~[38386](https://bugs.llvm.org/show_bug.cgi?id=38386)~~: PuTTY CI needs LLVM resource compiler on Windows. Shipped in LLVM 7.0.0 package.
   * ~~[40300](https://bugs.llvm.org/show_bug.cgi?id=40300)~~: lld-link does not detect duplicate symbols with /O3. Fixed in LLVM 9.0.0.
 
+## _Credits_
 ### _AES NI_
  * [Maxim Kuznetsov](https://github.com/mkuznets): original idea, AES key expansion, integration with SDE, paper
  * [Pavel Kryukov](https://github.com/pavelkryukov): AES encryption, unit tests, refactoring
@@ -31,6 +32,7 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
  * Original 2012–2015 patches are available in [repository history](https://github.com/pavelkryukov/putty-aes-ni/commits/svn-head)
  * Original 2015–2017 patches are located in [git branch](https://github.com/pavelkryukov/putty-ci/commits/aespatches)
  * Actual (applied to the main repository) patches are pointed by [git branch](https://github.com/pavelkryukov/putty-ci/commits/aespatches-fixed)
+ * Patched sources for PuTTY 0.64 in [git branch](https://git.tartarus.org/?p=simon/putty.git;a=tag;h=4ad063b7cd9258a104dc3caed36c7ae1abd1f4be)
  * Fixes and enhancements by community before the code was completely rewritten:
    * [`599bab8`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=599bab84a1019ccd6228dcc5a8bf8b9a33a96452) _Condition out AES-NI support if using a too-old clang_
    * [`a27f55e`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=a27f55e819f2c39ed45425625a0fa63e06089d76) _Use correct way to detect new instructions in Clang_
@@ -63,13 +65,17 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
 **Details:**
   * CI repository is a [PuTTY fork](https://github.com/pavelkryukov/putty-ci)
   * Previous history is available in PuTTY-AES-NI repository: [Travis](https://github.com/pavelkryukov/putty-aes-ni/commits/master/.travis.yml), [Appveyor](https://github.com/pavelkryukov/putty-aes-ni/commits/master/appveyor.yml)
+
+**Code Coverage Chart!**
+
+[![Code Coverage](https://codecov.io/gh/pavelkryukov/putty-ci/branch/master/graphs/tree.svg)](https://codecov.io/gh/pavelkryukov/putty-ci)
  
-### _CPUs with AES NI support_
+## _CPUs with AES NI support_
 
 Get sure that your CPU supports AES-NI by running `make aescpuid && ./aescpuid`.
 You may use [Intel Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI and SHA-NI.
  
-### _AES encryption and decryption_
+## _AES encryption and decryption_
 
 To observe boost of AES-NI algorithm, one may create standalone AES-256 encryptor and decryptor tools using PuTTY source code. After cloning repository and PuTTY submodule, binaries are buildable with GNU Makefile:
 
@@ -81,13 +87,13 @@ To observe boost of AES-NI algorithm, one may create standalone AES-256 encrypto
 Syntax is the same as 'cp' command. Please note that file size must be a multiple of 16 bytes.
 `<sshdemo> src dst`
 
-### _AES performance tests_
+## _AES performance tests_
 
 To run performance test, use `make perf-geomean-aes.txt`. The output is geometric mean of speedups per encryption/decryption of different data sets with memory range from 16 bytes to 16 Mbytes.
 
 Raw performance data is stored to **perf-original.txt** and **perf-output.txt**, the first one is for standard version, second is for AES-NI version. Format of output files is following: `code keylen blocklen time`, where code 0 is encryption, code 1 is decryption, and code 2 is for encryption in sdctr mode.
 
-### _AES and SHA functional tests_
+## _AES and SHA functional tests_
 
 Since 2019, all cryptography functional tests are included to the PuTTY repository. To run the tests in Bash, simply execute following commands in a configured PuTTY workspace:
 
@@ -99,6 +105,6 @@ export PUTTY_TESTCRYPT=/path/to/the/testcrypt
 
 The same works for Windows environment if you use appropriate CMD or PowerShell commands.
 
-### _Thanks_
+## _Thanks_
  * PuTTY creator [Simon Tatham](https://www.chiark.greenend.org.uk/~sgtatham/) for PuTTY, reviewing our code, and accepting the changes.
  * [Sergey Vladimirov](https://github.com/vlsergey) for mentorship of AES NI development in MIPT.
