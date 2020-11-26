@@ -1,0 +1,28 @@
+name: AES Performance Measurement
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+      name: Checkout
+      with:
+        submodules: 'true'
+
+    - name: Check CPUID
+      run: make aescpuid && ./aescpuid
+
+    - name: Build tools
+      run: make sshaes-demo-sw-encode sshaes-demo-hw-encode sshaes-demo-sw-decode sshaes-demo-hw-decode
+   
+    - name: Measure performance
+      run: make perf-geomean-aes.txt
+    
+    - name: Show performance
+      run: echo "Speedup in geomean is:" && cat perf-geomean-aes.txt
