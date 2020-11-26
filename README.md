@@ -1,9 +1,6 @@
-**AES demo**: [![Build Status](https://travis-ci.com/pavelkryukov/putty-aes-ni.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-aes-ni)
-
 **PuTTY**:
 [![Build Status](https://travis-ci.com/pavelkryukov/putty-ci.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-ci)
 [![Build status](https://ci.appveyor.com/api/projects/status/ff23l7wwucr4lle7?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty-ci)
-[![codecov](https://codecov.io/gh/pavelkryukov/putty-ci/branch/master/graph/badge.svg)](https://codecov.io/gh/pavelkryukov/putty-ci)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/pavelkryukov/putty-ci.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/pavelkryukov/putty-ci/alerts/)
 
 Demonstration suites for encryption using [Intel AES instruction set](https://www.intel.com/content/dam/doc/white-paper/advanced-encryption-standard-new-instructions-set-paper.pdf) and [ARM Cryptography Extension](http://infocenter.arm.com/help/index.jsp?topic=/com.arm.doc.ddi0514g/way1395175472464.html) in [PuTTY](http://www.putty.org/) SSH client and derived tools.
