@@ -1,5 +1,5 @@
 **PuTTY**:
-[![Build Status](https://travis-ci.com/pavelkryukov/putty-ci.svg?branch=master)](https://travis-ci.com/pavelkryukov/putty-ci)
+[![Build Status](https://github.com/pavelkryukov/putty-ci/actions/workflows/putty-ci.yml/badge.svg)](https://github.com/pavelkryukov/putty-ci/actions/workflows/putty-ci.yml)
 [![Build status](https://ci.appveyor.com/api/projects/status/ff23l7wwucr4lle7?svg=true)](https://ci.appveyor.com/project/pavelkryukov/putty-ci)
 [![Total alerts](https://img.shields.io/lgtm/alerts/g/pavelkryukov/putty-ci.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/pavelkryukov/putty-ci/alerts/)
 
