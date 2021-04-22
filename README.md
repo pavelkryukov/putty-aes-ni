@@ -45,6 +45,7 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
    * [`3347bd8`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=3347bd81b75e4e2e5c39de70d8771db37b380daa) _Fix AES-NI SDCTR to pass the new tests._
    * [`dfdb73e`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=dfdb73e103366081045f7e5c23ed1a35e4777da4) _Complete rewrite of the AES code._
    * [`ced0f19`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=ced0f1911830eceae26c737e93b44136828f2f13) _Ensure our aes_ni_context is 16-byte aligned._
+   * [`fca13a1`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=fca13a17b160da3b5069df3ceab19d4448c4f389) _Break up crypto modules containing HW acceleration._
 
 ### _SHA NI_
  * [Jeffrey Walton](https://github.com/noloader): publc domain [SHA implementation](https://github.com/noloader/SHA-Intrinsics), fixes to CPUID code.
@@ -58,9 +59,6 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
    * [`fbc8b7a`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=fbc8b7a8cbf49845d8fe35ffa6e66bb2638437aa) _Include `intrin.h` for hardware SHA on Windows_
    * [`cbbd464`](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=cbbd464fd752821fe444d67b891c3977c426dee1) _Rewrite the SHA-256 and SHA-1 hash function modules._
 
-### _ARM AES and SHA_
-  * Implemented by PuTTY's author Simon Tatham ([AES](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=53747ad3ab6194ebd54958a4ca0abcf73a457466), [SHA](https://git.tartarus.org/?p=simon/putty.git;a=commit;h=dc2fdb8acf19b5a51d4d9bb7d84ad7190b73205c))
-
 ### _PuTTY Continious integration_
   * [Pavel Kryukov](https://github.com/pavelkryukov)
 
@@ -70,7 +68,7 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
 
 **Code Coverage Chart!**
 
-[![Code Coverage](https://codecov.io/gh/pavelkryukov/putty-ci/branch/master/graphs/tree.svg)](https://codecov.io/gh/pavelkryukov/putty-ci)
+[![Code Coverage](https://codecov.io/gh/pavelkryukov/putty-ci/branch/main/graphs/tree.svg)](https://codecov.io/gh/pavelkryukov/putty-ci)
  
 ## _CPUs with AES NI support_
 
