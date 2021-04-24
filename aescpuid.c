@@ -53,8 +53,6 @@ bool platform_aes_hw_available(void)
 
 #endif /* defined(__x86_64__) || defined(__i386) */
 
-#ifdef CPUID_HAS_MAIN
-
 int main(int argc, char ** argv)
 {
     const bool support = platform_aes_hw_available();
@@ -62,4 +60,3 @@ int main(int argc, char ** argv)
     return support ? 0 : 1;
 }
 
-#endif /* CPUID_HAS_MAIN */

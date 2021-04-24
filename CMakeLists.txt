@@ -15,13 +15,12 @@ include_directories(${PROJECT_SOURCE_DIR}/Putty)
 link_directories(${CMAKE_BINARY_DIR}/Putty)
 
 function(add_crypto_executable)
-    add_executable(${ARGV} aescpuid.c)
+    add_executable(${ARGV})
     target_link_libraries(${ARGV0} crypto utils)
     add_dependencies(${ARGV0} Putty)
 endfunction()
 
-add_crypto_executable(aescpuid)
-target_compile_definitions(aescpuid PUBLIC CPUID_HAS_MAIN)
+add_executable(aescpuid aescpuid.c)
 
 add_crypto_executable(sshaes-perf aesperf.c)
 add_crypto_executable(sshaes-perf-ni aesperf.c)
