@@ -77,7 +77,7 @@ You may use [Intel Product Specification Advanced Search](https://ark.intel.com/
  
 ## _AES encryption and decryption_
 
-To observe boost of AES-NI algorithm, one may create standalone AES-256 encryptor and decryptor tools using PuTTY source code. After cloning repository and PuTTY submodule, binaries are buildable with GNU Makefile:
+To observe boost of AES-NI algorithm, one may create standalone AES-256 encryptor and decryptor tools using PuTTY source code. After cloning repository and PuTTY submodule, binaries are buildable with CMake:
 
 | Type | SW AES | AES NI |
 |:-|:-------|:-------|
