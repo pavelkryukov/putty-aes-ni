@@ -28,4 +28,4 @@ perf-geomean-%.txt: geomean.py perf-original-%.sorted.txt perf-output-%.sorted.t
 	@python3 ./$< $(filter-out $<,$^) > $@
 
 clean:
-	rm *.txt
+	rm perf-*.txt
