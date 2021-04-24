@@ -25,4 +25,4 @@ jobs:
       run: ./aescpuid
 
     - name: Measure performance
-      run: ./aesperf
+      run: ./aesperf | grep BigO
