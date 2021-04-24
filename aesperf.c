@@ -41,17 +41,10 @@ typedef enum
 void out_of_memory(void) { abort(); }
 
 #ifdef _HW_AES
-#define ALG(x) x ## _hw
+#define ALG(x) x ## _ni
 #else
 #define ALG(x) x ## _sw
 #endif
-
-extern const ssh_cipheralg ALG(ssh_aes128_sdctr);
-extern const ssh_cipheralg ALG(ssh_aes192_sdctr);
-extern const ssh_cipheralg ALG(ssh_aes256_sdctr);
-extern const ssh_cipheralg ALG(ssh_aes128_cbc);
-extern const ssh_cipheralg ALG(ssh_aes192_cbc);
-extern const ssh_cipheralg ALG(ssh_aes256_cbc);
 
 static const ssh_cipheralg* get_alg(KeyType keytype, TestType testtype)
 {

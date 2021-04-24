@@ -1,3 +1,0 @@
-[submodule "Putty"]
-	path = Putty
-	url = https://github.com/pavelkryukov/putty-ci.git

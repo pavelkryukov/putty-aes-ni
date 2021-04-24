@@ -11,18 +11,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
-      name: Checkout
-      with:
-        submodules: 'true'
 
-    - name: Check CPUID
-      run: make aescpuid && ./aescpuid
+    - name: Create build directory
+      run: mkdir build
 
-    - name: Build tools
-      run: make sshaes-demo-sw-encode sshaes-demo-hw-encode sshaes-demo-sw-decode sshaes-demo-hw-decode
+    - name: Run CMake
+      working-directory: build
+      run: cmake ..
    
+    - name: Build tools
+      working-directory: build
+      run: make all
+      
+    - name: Check CPUID
+      working-directory: build
+      run: ./aescpuid
+
     - name: Measure performance
       run: make perf-geomean-aes.txt
-    
+
     - name: Show performance
       run: echo "Speedup in geomean is:" && cat perf-geomean-aes.txt
