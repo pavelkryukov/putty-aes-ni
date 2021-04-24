@@ -12,23 +12,14 @@ jobs:
     steps:
     - uses: actions/checkout@v2
 
-    - name: Create build directory
-      run: mkdir build
-
     - name: Run CMake
-      working-directory: build
-      run: cmake ..
+      run: cmake .
    
     - name: Build tools
-      working-directory: build
       run: make all
       
     - name: Check CPUID
-      working-directory: build
       run: ./aescpuid
 
     - name: Measure performance
-      run: make perf-geomean-aes.txt
-
-    - name: Show performance
-      run: echo "Speedup in geomean is:" && cat perf-geomean-aes.txt
+      run: ./aesperf

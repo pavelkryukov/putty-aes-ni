@@ -14,29 +14,25 @@
 #include <stdlib.h>
 #include <assert.h>
 
-#include "ssh.h"
+#include "intf.h"
 
 #define BUF_LEN (1 << 28)
 
 #ifdef _HW_AES
-static const ssh_cipheralg* alg = &ssh_aes256_cbc_ni;
+#define MODE 1
 #else
-static const ssh_cipheralg* alg = &ssh_aes256_cbc_sw;
+#define MODE 0
 #endif
-
-void out_of_memory(void) { abort(); }
 
 void cipher(unsigned char* block)
 {
-    ssh_cipher *handle = ssh_cipher_new(alg);
-    ssh_cipher_setkey(handle, "imtheoperatorwithmypocketcalcula");
-    ssh_cipher_setiv(handle, "initializationve");
+    struct ssh_cipher *handle = create_handle(32, MODE, "imtheoperatorwithmypocketcalcula", "initializationve");
 #ifdef DECODE
-    ssh_cipher_decrypt(handle, block, BUF_LEN);
+    decrypt(handle, block, BUF_LEN);
 #else
-    ssh_cipher_encrypt(handle, block, BUF_LEN);
+    encrypt(handle, block, BUF_LEN);
 #endif
-    ssh_cipher_free(handle);
+    free_handle(handle);
 }
 
 int ciphCopy(char* src, char* dst)
