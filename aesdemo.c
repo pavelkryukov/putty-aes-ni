@@ -18,11 +18,9 @@
 
 #define BUF_LEN (1 << 28)
 
-#ifdef NEW_INSTRUCTIONS
-extern const ssh_cipheralg ssh_aes256_cbc_hw;
-static const ssh_cipheralg* alg = &ssh_aes256_cbc_hw;
+#ifdef _HW_AES
+static const ssh_cipheralg* alg = &ssh_aes256_cbc_ni;
 #else
-extern const ssh_cipheralg ssh_aes256_cbc_sw;
 static const ssh_cipheralg* alg = &ssh_aes256_cbc_sw;
 #endif
 
