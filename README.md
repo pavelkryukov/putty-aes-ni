@@ -81,8 +81,8 @@ To observe boost of AES-NI algorithm, one may create standalone AES-256 encrypto
 
 | Type | SW AES | AES NI |
 |:-|:-------|:-------|
-| Encrypt | sshaes-demo-sw-encode | sshaes-demo-hw-encode |
-| Decrypt | sshaes-demo-sw-decode | sshaes-demo-hw-decode |
+| Encrypt | aes-demo-sw-encode | aes-demo-hw-encode |
+| Decrypt | aes-demo-sw-decode | aes-demo-hw-decode |
 
 Syntax is the same as 'cp' command. Please note that file size must be a multiple of 16 bytes.
 `<sshdemo> src dst`
