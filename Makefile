@@ -9,14 +9,14 @@
 BUILD_DIR?=build
 
 # Performance outputs
-perf-original-aes.txt:
+perf-original-aes.txt: ${BUILD_DIR}/sshaes-perf
 	@echo "[run] $@"
-	@${BUILD_DIR}/sshaes-perf
+	@./$^
 	@mv perf-output.txt $@
 
-perf-output-aes.txt: ${BUILD}/sshaesni-perf
+perf-output-aes.txt: ${BUILD_DIR}/sshaes-perf-ni
 	@echo "[run] $@"
-	@${BUILD_DIR}/sshaes-perf-ni
+	@./$^
 	@mv perf-output.txt $@
 
 %.sorted.txt: %.txt
