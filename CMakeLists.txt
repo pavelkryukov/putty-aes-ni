@@ -24,8 +24,8 @@ endfunction()
 
 add_executable(aescpuid aescpuid.c)
 
-add_crypto_executable(aes-perf benchmark.cpp)
-target_link_libraries(aes-perf benchmark pthread rt)
+add_crypto_executable(aesperf benchmark.cpp)
+target_link_libraries(aesperf benchmark pthread rt)
 
 add_crypto_executable(aes-demo-sw-encode demo.c)
 add_crypto_executable(aes-demo-hw-encode demo.c)
