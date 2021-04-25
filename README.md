@@ -50,7 +50,7 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
 ### _SHA NI_
  * [Jeffrey Walton](https://github.com/noloader): publc domain [SHA implementation](https://github.com/noloader/SHA-Intrinsics), fixes to CPUID code.
  * [Pavel Kryukov](https://github.com/pavelkryukov): integration of SHA into PuTTY code, unit tests
- 
+
 **Details:**
  * Original patches are pointed by [git branch](https://github.com/pavelkryukov/putty-ci/commits/shapatches)
  * Fixes and enhancements by community before the code was completely rewritten:
@@ -69,12 +69,12 @@ Demonstration suites for encryption using [Intel AES instruction set](https://ww
 **Code Coverage Chart!**
 
 [![Code Coverage](https://codecov.io/gh/pavelkryukov/putty-ci/branch/main/graphs/tree.svg)](https://codecov.io/gh/pavelkryukov/putty-ci)
- 
+
 ## _CPUs with AES NI support_
 
 Get sure that your CPU supports AES-NI by running `make aescpuid && ./aescpuid`.
 You may use [Intel Product Specification Advanced Search](https://ark.intel.com/Search/FeatureFilter?productType=processors&AESTech=true) to check if your CPU supports AES-NI and SHA-NI.
- 
+
 ## _AES encryption and decryption_
 
 To observe boost of AES-NI algorithm, one may create standalone AES-256 encryptor and decryptor tools using PuTTY source code. After cloning repository and PuTTY submodule, binaries are buildable with CMake:

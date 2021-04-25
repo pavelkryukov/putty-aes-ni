@@ -36,7 +36,7 @@ bool platform_aes_hw_available()
 #endif /* defined(__clang__) || defined(__GNUC__) */
 
 #else /* defined(__x86_64__) || defined(__i386) */
-    
+
 #include <sys/auxv.h>
 #include <asm/hwcap.h>
 

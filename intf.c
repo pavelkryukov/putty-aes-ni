@@ -18,10 +18,10 @@ void out_of_memory() { abort(); }
 static const struct ssh_cipheralg* get_alg(int keytype, int is_accelerated)
 {
     switch (keytype) {
-    	case 16: return is_accelerated ? &ssh_aes128_cbc_ni : &ssh_aes128_cbc_sw;
-    	case 24: return is_accelerated ? &ssh_aes192_cbc_ni : &ssh_aes192_cbc_sw;
-    	case 32: return is_accelerated ? &ssh_aes256_cbc_ni : &ssh_aes256_cbc_sw;
-    	default: return NULL;
+    case 16: return is_accelerated ? &ssh_aes128_cbc_ni : &ssh_aes128_cbc_sw;
+    case 24: return is_accelerated ? &ssh_aes192_cbc_ni : &ssh_aes192_cbc_sw;
+    case 32: return is_accelerated ? &ssh_aes256_cbc_ni : &ssh_aes256_cbc_sw;
+    default: return NULL;
     }
 }
 

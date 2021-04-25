@@ -9,7 +9,7 @@
  * For Putty AES NI project
  * http://putty-aes-ni.googlecode.com/
  */
- 
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
