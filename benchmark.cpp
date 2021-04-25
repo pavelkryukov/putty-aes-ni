@@ -30,6 +30,10 @@ template<int keytype, TestType test, int is_accelerated>
 static void bench(benchmark::State& state)
 {
     auto ptr = std::make_unique<unsigned char[]>(state.range(0) + 2*256);
+
+    for (auto i = 0; i < state.range(0) + 2*256; ++i)
+        ptr[i] = rand();
+
     unsigned char* const key = ptr.get() + state.range(0);
     unsigned char* const blk = ptr.get();
     unsigned char* const iv = ptr.get() + keytype + state.range(0);
